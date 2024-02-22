@@ -1,0 +1,74 @@
+{
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/Shuffleboard/Autonomous/Select Autonomous Path": "String Chooser",
+      "/Shuffleboard/Autonomous/SendableChooser[0]": "String Chooser",
+      "/Shuffleboard/Subsystems/Drive Subsystem": "Subsystem",
+      "/Shuffleboard/Subsystems/Drive/Drive Subsystem": "Subsystem",
+      "/Shuffleboard/Subsystems/Intake/Intake Subsystem": "Subsystem",
+      "/Shuffleboard/Subsystems/Shooter/Shooter Subsystem": "Subsystem",
+      "/Shuffleboard/Teleoperated/Blue Commands/Path To Amp": "Command",
+      "/Shuffleboard/Teleoperated/Field": "Field2d",
+      "/Shuffleboard/Teleoperated/Red Commands/Path To Amp": "Command",
+      "/SmartDashboard/Drive": "Subsystem",
+      "/SmartDashboard/Reset Gyro": "Command"
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "LiveWindow": {
+        "open": true
+      },
+      "Shuffleboard": {
+        ".metadata": {
+          "Drive": {
+            "Max Speed": {
+              "open": true
+            },
+            "open": true
+          },
+          "open": true
+        },
+        "Drive": {
+          "open": true
+        },
+        "Subsystems": {
+          "Drive": {
+            "open": true
+          },
+          "open": true
+        },
+        "open": true
+      },
+      "SmartDashboard": {
+        "Reset Gyro": {
+          "open": true
+        },
+        "open": true
+      },
+      "SwerveStates": {
+        "SwerveModuleState[]##v_/SwerveStates/Measured": {
+          "SwerveModuleState##v_[2]": {
+            "open": true
+          },
+          "open": true
+        }
+      }
+    }
+  },
+  "NetworkTables Info": {
+    "Server": {
+      "Publishers": {
+        "open": true
+      },
+      "Subscribers": {
+        "open": true
+      }
+    },
+    "shuffleboard@1": {
+      "open": true
+    },
+    "visible": true
+  }
+}
