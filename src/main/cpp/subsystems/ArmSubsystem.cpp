@@ -121,4 +121,5 @@ frc2::CommandPtr ArmSubsystem::SetArmPositionCommand(units::degree_t setpoint)
    /* Create a command to run the arm to the specified setpoint.        */
    return(frc2::cmd::RunOnce([this, setpoint] { this->SetGoal(units::radian_t{setpoint}); }, {this}));
 }
+;
 
