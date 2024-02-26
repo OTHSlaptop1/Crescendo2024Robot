@@ -22,6 +22,14 @@ class ArmSubsystem : public frc2::TrapezoidProfileSubsystem<units::radians>
    ArmSubsystem();
 
    /**
+    * Get the current angle of the arm.
+    *
+    * @return The current angle of the Arm in degrees.
+    *
+    */
+   units::degree_t GetArmAngle(void);
+
+   /**
     * Generates a command to set the arm position.
     *
     *  @param setpoint  Set point position to move the arm to.
@@ -29,6 +37,20 @@ class ArmSubsystem : public frc2::TrapezoidProfileSubsystem<units::radians>
     *  @return A command pointer that runs the arm to the specified position.
     */
    frc2::CommandPtr SetArmPositionCommand(units::degree_t setpoint);
+
+   /**
+    * Generates a command to move the arm up.
+    *
+    *  @return A command pointer that runs the arm up.
+    */
+   frc2::CommandPtr ArmUpCommmand(void);
+
+   /**
+    * Generates a command to move the arm down.
+    *
+    *  @return A command pointer that runs the arm down.
+    */
+   frc2::CommandPtr ArmDownCommand(void);
 
  protected:
 

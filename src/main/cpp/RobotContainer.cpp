@@ -26,10 +26,11 @@
 
 #include <utility>
 #include <functional>
+#include <limits>
 
 #include "Constants.h"
 
-#include "commands/ShootNoteFromIntake.h"
+#include "commands/ShootNoteFromIntakeCommand.h"
 
 #include "subsystems/DriveSubsystem.h"
 #include "subsystems/OdometrySubsystem.h"
@@ -45,15 +46,15 @@ RobotContainer::RobotContainer() {
   pathplanner::NamedCommands::registerCommand("Intake_GrabNote", std::move(m_intake.GrabNoteCommand(4500_rpm)));
 
 #ifdef USE_SHOOTER
-  pathplanner::NamedCommands::registerCommand("ShootNoteFromIntake", std::move(ShootNoteFromIntake(
-                                                                                                    &m_intake,      // intake subsystem pointer
-                                                                                                    9500_rpm,       // intake output to shooter speed (rpm)
-                                                                                                    &m_shooter,     // shooter subsystem pointer
-                                                                                                    5500_rpm,       // shooter left flywheel speed (rpm)
-                                                                                                    4500_rpm,       // shooter right flywheel speed (rpm
-                                                                                                    7.5_s,          // shooter flywheel spinup timeout
-                                                                                                    1_s             // after intake enabled time till complete
-                                                                                                   ).ToPtr()));
+  pathplanner::NamedCommands::registerCommand("ShootNoteFromIntake", std::move(ShootNoteFromIntakeCommand(
+                                                                                                           &m_intake,      // intake subsystem pointer
+                                                                                                           9500_rpm,       // intake output to shooter speed (rpm)
+                                                                                                           &m_shooter,     // shooter subsystem pointer
+                                                                                                           5500_rpm,       // shooter left flywheel speed (rpm)
+                                                                                                           4500_rpm,       // shooter right flywheel speed (rpm
+                                                                                                           7.5_s,          // shooter flywheel spinup timeout
+                                                                                                           1_s             // after intake enabled time till complete
+                                                                                                          ).ToPtr()));
 #endif
 #endif
 
@@ -63,6 +64,9 @@ RobotContainer::RobotContainer() {
 
   m_lastAllowIntakeControlState  = false;
   m_lastAllowShooterControlState = false;
+  m_lastAllowArmControlState     = false;
+
+  m_armLastDashboardSetPoint     = std::numeric_limits<double>::quiet_NaN();
 
   // Initialize all of your commands and subsystems here
 
@@ -128,7 +132,7 @@ RobotContainer::RobotContainer() {
   /* ** NOTE ** .WithSize() doesn't seem to do anything when in a       */
   /*            layout.  .WithPosition() does seem to set relative      */
   /*            position with in the layout (sometimes).                */
-  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive", frc::BuiltInLayouts::kList).WithSize(2, 7).WithPosition(0, 0);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive", frc::BuiltInLayouts::kList).WithSize(2, 8).WithPosition(0, 0);
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Drive Subsystem", m_drive).WithPosition(0, 0);
   m_maxSpeedEntryPtr                 = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Speed", m_drive.GetMaxSpeed().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(kDefaultMaxSpeed.value())}}).WithPosition(0, 1).GetEntry();
   m_maxAngularSpeedEntryPtr          = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Angular Speed", units::degrees_per_second_t(m_drive.GetMaxAngularSpeed()).value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(units::degrees_per_second_t(kDefaultMaxAngularSpeed).value())}}).WithPosition(0, 2).GetEntry();
@@ -155,7 +159,7 @@ RobotContainer::RobotContainer() {
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Intake").AddBoolean("Is Note Detected", [this]{ return(m_intake.IsNoteDetected()); }).WithPosition(0, 4);
   m_allowIntakeControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Intake").Add("Allow Dashboard Control", false).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 5).GetEntry();
   m_intakeSpeedEntryPtr        = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Intake").Add("Intake Speed", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(IntakeConstants::kIntakeMinimumSpeed.value())}, {"max_value", nt::Value::MakeDouble(IntakeConstants::kIntakeMaximumSpeed.value())}}).WithPosition(0, 6).WithSize(2, 1).GetEntry();
-  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Intake").Add("Grab Note", *(m_grabNote.get())).WithPosition(0, 7);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Intake").Add("Grab Note", *(m_grabNote.get())).WithProperties({{"show_type", nt::Value::MakeBoolean(false)}}).WithPosition(0, 7);
 #endif
 
 #ifdef USE_SHOOTER
@@ -163,7 +167,7 @@ RobotContainer::RobotContainer() {
   /* ****************** Shooter Subsystem ***************************** */
   /* ****************************************************************** */
 
-  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter", frc::BuiltInLayouts::kList).WithSize(2,5).WithPosition(4, 0);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter", frc::BuiltInLayouts::kList).WithSize(2, 6).WithPosition(4, 0);
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter").Add("Shooter Subsystem", m_shooter).WithPosition(0, 0);
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter").AddDouble("Left Measured Speed", [this]{ return(m_shooter.GetCurrentLeftSpeed().value()); }).WithWidget(frc::BuiltInWidgets::kNumberBar).WithProperties({{"min_value", nt::Value::MakeDouble(ShooterConstants::kShooterMinimumSpeed.value())}, {"max_value", nt::Value::MakeDouble(ShooterConstants::kShooterMaximumSpeed.value())}, {"divisions", nt::Value::MakeInteger(5)}}).WithPosition(0, 1);
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter").AddDouble("Right Measured Speed", [this]{ return(m_shooter.GetCurrentRightSpeed().value()); }).WithWidget(frc::BuiltInWidgets::kNumberBar).WithProperties({{"min_value", nt::Value::MakeDouble(ShooterConstants::kShooterMinimumSpeed.value())}, {"max_value", nt::Value::MakeDouble(ShooterConstants::kShooterMaximumSpeed.value())}, {"divisions", nt::Value::MakeInteger(5)}}).WithPosition(0, 2);
@@ -172,11 +176,19 @@ RobotContainer::RobotContainer() {
   m_shooterLeftSpeedEntryPtr  = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter").Add("Left Set Speed", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(ShooterConstants::kShooterMinimumSpeed.value())}, {"max_value", nt::Value::MakeDouble(ShooterConstants::kShooterMaximumSpeed.value())}}).WithPosition(0, 4).GetEntry();
   m_shooterRightSpeedEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter").Add("Right Set Speed", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(ShooterConstants::kShooterMinimumSpeed.value())}, {"max_value", nt::Value::MakeDouble(ShooterConstants::kShooterMaximumSpeed.value())}}).WithPosition(0, 5).GetEntry();
 
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Shooter").Add("Slow Remove Note", *(m_slowRemoveNote.get())).WithProperties({{"show_type", nt::Value::MakeBoolean(false)}}).WithPosition(0, 7);
 #endif
 
 #ifdef USE_ARM
-  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm", frc::BuiltInLayouts::kList).WithSize(2,5).WithPosition(5, 0);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm", frc::BuiltInLayouts::kList).WithSize(2, 6).WithPosition(6, 0);
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Arm Subsystem", m_arm).WithPosition(0, 0);
+
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Arm Up", *(m_armUp.get())).WithProperties({{"show_type", nt::Value::MakeBoolean(false)}}).WithPosition(0, 1);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Arm Down", *(m_armDown.get())).WithProperties({{"show_type", nt::Value::MakeBoolean(false)}}).WithPosition(0, 2);
+
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").AddDouble("Measured Angle", [this]{ return(m_arm.GetArmAngle().value()); }).WithWidget(frc::BuiltInWidgets::kNumberBar).WithProperties({{"min_value", nt::Value::MakeDouble(ArmConstants::kArmMinimumAngle.value())}, {"max_value", nt::Value::MakeDouble(ArmConstants::kArmMaximumAngle.value())}, {"divisions", nt::Value::MakeInteger(5)}}).WithPosition(0, 3);
+  m_allowArmControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Allow Dashboard Control", false).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
+  m_armPositionEntryPtr     = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Set Angle", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(ArmConstants::kArmMinimumAngle.value())}, {"max_value", nt::Value::MakeDouble(ArmConstants::kArmMaximumAngle.value())}}).WithPosition(0, 5).WithSize(2, 1).GetEntry();
 #endif
 
   /* Change the Tab to automatically start on the subsystems tab.       */
@@ -200,28 +212,29 @@ RobotContainer::RobotContainer() {
   JoystickDriveCommand.get()->SetName("Joystick Drive Default Command");
 
   // Set up default drive command
-//xxx remove for intake testing  m_drive.SetDefaultCommand(std::move(JoystickDriveCommand));
+  m_drive.SetDefaultCommand(std::move(JoystickDriveCommand));
 }
 
 void RobotContainer::ConfigureButtonBindings()
 {
    /* Set the B button to set the wheels in X position to stop          */
    /* quickly.                                                          */
-   frc2::JoystickButton(&m_driverController, frc::XboxController::Button::kB).WhileTrue(frc2::cmd::Run([this] { m_drive.SetX(); }, {&m_drive}));
+   m_driverController.B().WhileTrue(frc2::cmd::Run([this] { m_drive.SetX(); }, {&m_drive}));
 
    /* Set the X button to zero the gyro heading.                        */
-   frc2::JoystickButton(&m_driverController, frc::XboxController::Button::kX).OnTrue(frc2::cmd::RunOnce([this] { m_drive.ZeroHeading(); }, {&m_drive}));
+   m_driverController.X().OnTrue(frc2::cmd::RunOnce([this] { m_drive.ZeroHeading(); }, {&m_drive}));
 
 #ifdef USE_INTAKE
-   /* Set the Left Bumper to run the intake until a note is grabbed or  */
-   /* the button is released.                                           */
-   frc2::JoystickButton(&m_driverController, frc::XboxController::Button::kLeftBumper).WhileTrue(m_intake.GrabNoteCommand(4500_rpm));
+   /* Set the Right Trigger to run the intake until a note is grabbed or*/
+   /* the right trigger is released.                                    */
+   m_driverController.RightTrigger(0.75).WhileTrue(m_intake.GrabNoteCommand(9000_rpm));
 #endif
 
 #ifdef USE_SHOOTER
    /* Set the Right Bumper to run the shooter while the right bumper is */
    /* pressed then stop the shooter once the bumper is released.        */
-   frc2::JoystickButton(&m_driverController, frc::XboxController::Button::kRightBumper).WhileTrue(m_shooter.ShootNoteWithTriggerCommand(5500_rpm, 4500_rpm));
+// do we want to be able to shoot the note from the driver controller????  or at least maybe just poop it out?
+//xxxx   frc2::JoystickButton(&m_driverController, frc::XboxController::Button::kRightBumper).WhileTrue(m_shooter.ShootNoteWithTriggerCommand(5500_rpm, 4500_rpm));
 #endif
 }
 
@@ -247,8 +260,8 @@ void RobotContainer::PumpShuffleBoard(void)
    /* Get the current state of the trigger based speed control switch.   */
    if(m_triggerBasedSpeedControlEntryPtr->GetBoolean(false))
    {
-      /* The trigger based speed control switch indicates we need to use */
-      /* the triggers for speed control.                                 */
+      /* The trigger based speed control switch indicates we need to use*/
+      /* the triggers for speed control.                                */
 
       /* Get the current left trigger axis value.                       */
       leftTriggerValue = m_driverController.GetLeftTriggerAxis();
@@ -357,6 +370,53 @@ void RobotContainer::PumpShuffleBoard(void)
       m_lastAllowShooterControlState = false;
    }
 #endif
+
+#ifdef USE_ARM
+   /* Get the current state of the allow arm position control switch.   */
+   if(m_allowArmControlEntryPtr->GetBoolean(false))
+   {
+      /* The allow arm position control switch is enabled.              */
+
+      /* Get the current arm setpoint from the dashboard.               */
+      tempValue = m_armPositionEntryPtr->GetDouble(0.0);
+
+      /* Check to see if the value read from the dashboard is differnt  */
+      /* than the last set point specified via the dashboard.           */
+      if(m_armLastDashboardSetPoint = tempValue)
+      {
+         /* The new setpoint is different the previously stored last    */
+         /* setpoint value.  Move to this angle as the new goal.        */
+         m_arm.SetGoal(units::radian_t{units::degree_t{tempValue}});
+
+         /* Save the new set point value to the last dashboard setpoint */
+         /* value.                                                      */
+         m_armLastDashboardSetPoint = tempValue;
+      }
+
+      /* Set the last allow arm control state to true.                  */
+      m_lastAllowArmControlState = true;
+   }
+   else
+   {
+      /* The allow arm position control switch is disabled.             */
+
+      /* Check to see if the last allow arm control state is true.      */
+      if(m_lastAllowArmControlState)
+      {
+         /* The last state of the arm control was true and is now false.*/
+         /* In this case make sure the arm stops and stays at the       */
+         /* current location.                                           */
+         m_arm.SetGoal(units::radian_t{m_arm.GetArmAngle()});
+
+         /* Invalidate the last dashboard setpoint that was stored.     */
+         m_armLastDashboardSetPoint = std::numeric_limits<double>::quiet_NaN();
+      }
+
+      /* Set the last allow arm control state to false.                 */
+      m_lastAllowArmControlState = false;
+   }
+#endif
+
 
    /* Now check to see if setting the pose is currently allowed or if we*/
    /* are just going to display the current pose.                       */

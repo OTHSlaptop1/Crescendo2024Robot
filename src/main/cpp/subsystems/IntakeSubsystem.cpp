@@ -92,7 +92,7 @@ void IntakeSubsystem::Periodic()
    m_intakeMeasuredCurrentPublisher.Set(m_intakeSparkMax.GetOutputCurrent());
 
    /* Log the current state of the note detection input.                */
-   m_intakeNoteDetectPublisher.Set(m_noteDetect.Get());
+   m_intakeNoteDetectPublisher.Set(IsNoteDetected());
 }
 
    /* Run the intake motor at the specified speed in RPMs.              */
@@ -150,7 +150,7 @@ frc2::CommandPtr IntakeSubsystem::GrabNoteCommand(units::revolutions_per_minute_
 bool IntakeSubsystem::IsNoteDetected(void)
 {
    /* Return the current note detection input state to the caller.      */
-   return(m_noteDetect.Get());
+   return(!m_noteDetect.Get());
 }
 
    /* Get the current speed of the intake.                              */

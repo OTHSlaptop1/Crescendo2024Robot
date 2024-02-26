@@ -54,7 +54,7 @@ class SwerveModule {
   rev::CANSparkMax m_drivingSparkMax;
   rev::CANSparkMax m_turningSparkMax;
 
-  rev::SparkRelativeEncoder m_drivingEncoder         = m_drivingSparkMax.GetEncoder(rev::SparkRelativeEncoder::Type::kHallSensor);
+  rev::SparkRelativeEncoder m_drivingEncoder         = m_drivingSparkMax.GetEncoder();
   rev::SparkAbsoluteEncoder m_turningAbsoluteEncoder = m_turningSparkMax.GetAbsoluteEncoder(rev::SparkAbsoluteEncoder::Type::kDutyCycle);
 
   rev::SparkPIDController m_drivingPIDController = m_drivingSparkMax.GetPIDController();

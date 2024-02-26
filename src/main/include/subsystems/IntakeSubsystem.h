@@ -78,7 +78,7 @@ class IntakeSubsystem : public frc2::SubsystemBase {
    rev::CANSparkMax m_intakeSparkMax;
 
    /* Spark Max encoder for the intake motor.           */
-   rev::SparkRelativeEncoder m_intakeEncoder = m_intakeSparkMax.GetEncoder(rev::SparkRelativeEncoder::Type::kHallSensor);
+   rev::SparkRelativeEncoder m_intakeEncoder = m_intakeSparkMax.GetEncoder();
 
    /* Spark Max PID controller for the index motor.     */
    rev::SparkPIDController m_intakePIDController = m_intakeSparkMax.GetPIDController();

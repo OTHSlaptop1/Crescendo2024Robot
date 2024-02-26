@@ -14,6 +14,16 @@
 
 using namespace ArmConstants;
 
+   /* The following constant defines the threhold percentage of the     */
+   /* targeted Arm Position that the Arm must attain to complete this   */
+   /* command.                                                          */
+#define ARM_UP_THRESHOLD_PERCENT                                     (0.98)
+
+   /* The following constant defines the threhold percentage of the     */
+   /* targeted Arm Position that the Arm must attain to complete this   */
+   /* command.                                                          */
+#define ARM_DOWN_THRESHOLD_PERCENT                                     (1.02)
+
 ArmSubsystem::ArmSubsystem()
     // The TrapezoidProfileSubsystem used by the subsystem
     : TrapezoidProfileSubsystem(
@@ -39,6 +49,10 @@ ArmSubsystem::ArmSubsystem()
    // want these in radians and radians per second to use with the ARM.
    m_armAbsoluteEncoder.SetPositionConversionFactor(kArmEncoderPositionFactor);
    m_armAbsoluteEncoder.SetVelocityConversionFactor(kArmEncoderVelocityFactor);
+
+//xxx consider using SetSoftLimit to set end points...
+//xxx looks like you call SetSoftLimit and also EnableSoftLimit  (matches scaling units set by user. default is rotations,
+//xxx should be in radians since we set the position conversion factor above...
 
    // Set the leader PID Controller to use the duty cycle encoder on the swerve
    // module instead of the built in NEO encoder.
@@ -115,11 +129,113 @@ void ArmSubsystem::UseState(frc::TrapezoidProfile<units::radians>::State setpoin
    m_leaderPIDController.SetReference(setpoint.position.value(), rev::CANSparkMax::ControlType::kPosition, 0/*PID Slot*/, feedforward.value(), rev::SparkMaxPIDController::ArbFFUnits::kVoltage);
 }
 
+   /* Returns the current angle of the arm in degress.                  */
+units::degree_t ArmSubsystem::GetArmAngle(void)
+{
+   /* Simply return the current Arm Angle.                              */
+   return(units::degree_t(units::radian_t{m_armAbsoluteEncoder.GetPosition()}));
+}
+
    /* Generates a command to set the arm position.                      */
 frc2::CommandPtr ArmSubsystem::SetArmPositionCommand(units::degree_t setpoint)
 {
+   /* Clamp the angle to the minimum and maximum.                       */
+   setpoint = std::clamp(setpoint, kArmMinimumAngle, kArmMaximumAngle);
+
    /* Create a command to run the arm to the specified setpoint.        */
    return(frc2::cmd::RunOnce([this, setpoint] { this->SetGoal(units::radian_t{setpoint}); }, {this}));
 }
-;
+
+   /* Generates a command to move the arm up.                           */
+frc2::CommandPtr ArmSubsystem::ArmUpCommmand(void)
+{
+   /* Generated a command that enable and sets the goal to the maximum  */
+   /* angle on initialization, does nothing while executing, stops the  */
+   /* arm and sets it position to the current position when interrupted.*/
+   /* Uses reaching the maximum up angle to stop the command.           */
+   frc2::CommandPtr ret_val = frc2::FunctionalCommand(
+                                                      [this] {
+                                                               /* First make sure that the arm subsystem is currently set to be     */
+                                                               /* enabled.                                                          */
+                                                               this->Enable();
+
+                                                               /* Set the goal for moving the arm subsystem to be maximum angle     */
+                                                               /* supported by the arm.                                             */
+                                                               this->SetGoal(units::radian_t{kArmMaximumAngle});
+                                                             },
+                                                      [] {},
+                                                      [this](bool interrupted){
+                                                                                /* Check to see if the reason this command ended was because it was  */
+                                                                                /* interrupts.                                                       */
+                                                                                if(interrupted)
+                                                                                {
+                                                                                   /* The reason this command ended was because it was interrupts.   */
+                                                                                   /* Set the goal angle for the arm to be the current angle to stop */
+                                                                                   /* its motion.                                                    */
+                                                                                   this->SetGoal(units::radian_t{this->GetArmAngle()});
+                                                                                }
+                                                                              },
+                                                      [this]{
+                                                               /* Now check to see if we are at the maximum angle.                  */
+                                                               if(this->GetArmAngle() >= (kArmMaximumAngle * ARM_UP_THRESHOLD_PERCENT))
+                                                                  return(true);
+                                                               else
+                                                                  return(false);
+                                                            },
+                                                      {this} ).ToPtr();
+
+   /* Give the command a readable name.                                 */
+   ret_val.get()->SetName("ArmUpCommmand()");
+
+   /* Return the command to the caller.                                 */
+   return(ret_val);
+}
+
+   /* Generates a command to move the arm down.                         */
+frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
+{
+   /* Generated a command that enable and sets the goal to the minimum  */
+   /* angle on initialization, does nothing while executing, stops the  */
+   /* arm and sets it position to the current position when interrupted.*/
+   /* Uses reaching the maximum up angle to stop the command.           */
+   frc2::CommandPtr ret_val = frc2::FunctionalCommand(
+                                                      [this] {
+                                                               /* First make sure that the arm subsystem is currently set to be     */
+                                                               /* enabled.                                                          */
+                                                               this->Enable();
+
+                                                               /* Set the goal for moving the arm subsystem to be minimum angle     */
+                                                               /* supported by the arm.                                             */
+                                                               this->SetGoal(units::radian_t{kArmMinimumAngle});
+                                                             },
+                                                      [] {},
+                                                      [this](bool interrupted){
+                                                                                /* Check to see if the reason this command ended was because it was  */
+                                                                                /* interrupts.                                                       */
+                                                                                if(interrupted)
+                                                                                {
+                                                                                   /* The reason this command ended was because it was interrupts.   */
+                                                                                   /* Set the goal angle for the arm to be the current angle to stop */
+                                                                                   /* its motion.                                                    */
+                                                                                   this->SetGoal(units::radian_t{this->GetArmAngle()});
+                                                                                }
+                                                                              },
+                                                      [this]{
+                                                               /* Now check to see if we are at the minimum angle.                  */
+                                                               if(this->GetArmAngle() <= (kArmMinimumAngle * ARM_DOWN_THRESHOLD_PERCENT))
+                                                                  return(true);
+                                                               else
+                                                                  return(false);
+                                                            },
+                                                      {this} ).ToPtr();
+
+   /* Give the command a readable name.                                 */
+   ret_val.get()->SetName("ArmDownCommmand()");
+
+   /* Return the command to the caller.                                 */
+   return(ret_val);
+}
+
+
+
 

@@ -60,6 +60,13 @@ constexpr int kRearLeftTurningCanId   = 7;
 constexpr int kPigeonGyroCanId = 10;
 constexpr const char kPigeonBusName[] = "rio";
 
+// Constants used with the Aiming PID Controller used to lock rotation to point at the speaker.
+constexpr double kSpeakerAimP = 1.0;
+constexpr double kSpeakerAimI = 0.0;
+constexpr double kSpeakerAimD = 0.0;
+
+constexpr units::radian_t kSpeakerAimTolerance = units::radian_t{5_deg};
+
 }  // namespace DriveConstants
 
 namespace ModuleConstants {
@@ -176,7 +183,7 @@ constexpr double kShooterLeftD = 0;
 
 // Shooter left Simple Motor Feedforward constants.  These were captured using SysId
 constexpr units::volt_t kShooterLeftkS = 0.021881_V;
-constexpr auto kShooterLeftkV          = (0.12016_V * 1_s)/ 1_tr;
+constexpr auto kShooterLeftkV          = (0.12500_V * 1_s)/ 1_tr;
 constexpr auto kShooterLeftkA          = (0.037387_V * 1_s * 1_s)/ 1_tr;
 
 // Shooter right motor PID constants.
@@ -186,7 +193,7 @@ constexpr double kShooterRightD = 0;
 
 // Shooter right Simple Motor Feedforward constants.  These were captured using SysId
 constexpr units::volt_t  kShooterRightkS = 0.021881_V;
-constexpr auto kShooterRightkV           = (0.12016_V * 1_s)/ 1_tr;
+constexpr auto kShooterRightkV           = (0.12500_V * 1_s)/ 1_tr;
 constexpr auto kShooterRightkA           = (0.037387_V * 1_s * 1_s)/ 1_tr;
 
 } // namespace ShooterConstants
@@ -231,6 +238,9 @@ namespace ArmConstants {
    constexpr double kArmEncoderPositionFactor = (2 * std::numbers::pi);  // radians
    constexpr double kArmEncoderVelocityFactor =  (2 * std::numbers::pi) / 60.0;  // radians per second
 
+   constexpr units::degree_t kArmMinimumAngle = -13.5_deg;
+   constexpr units::degree_t kArmMaximumAngle = 90_deg;
+
    /* Arm PID constants.            */
    constexpr double kArmP  = 1.0;
    constexpr double kArmI  = 0.0;
@@ -239,8 +249,8 @@ namespace ArmConstants {
    constexpr double kArmMinOutput = -1;
    constexpr double kArmMaxOutput = 1;
 
-   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{45_deg_per_s};
-   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{90_deg_per_s_sq};
+   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{25_deg_per_s};
+   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{35_deg_per_s_sq};
 
    constexpr int kArmLeaderCanId  = 13;
    constexpr int kArmFollwerCanId = 14;
@@ -258,6 +268,11 @@ namespace ArmConstants {
 
 } // namespace ArmContrants
 
+namespace LiftConstants {
+
+   constexpr int kLiftCanId  = 15;
+
+} // namespace LiftContrants
 
 namespace AutoConstants {
 constexpr auto kMaxSpeed               = 3_mps;

@@ -4,9 +4,8 @@
 
 #pragma once
 
-#include <frc/XboxController.h>
-#include <frc/controller/PIDController.h>
-#include <frc/controller/ProfiledPIDController.h>
+#include <frc2/command/button/CommandXboxController.h>
+
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
 #include <frc2/command/InstantCommand.h>
@@ -19,6 +18,9 @@
 #include <functional>
 
 #include "Constants.h"
+
+#include "commands/ShootNoteFromIntakeCommand.h"
+
 #include "subsystems/DriveSubsystem.h"
 #include "subsystems/OdometrySubsystem.h"
 #include "subsystems/VisionSubsystem.h"
@@ -80,7 +82,7 @@ class RobotContainer {
   static frc2::CommandPtr PathPlannerCommandFactory(std::string autoName) noexcept;
 
   // The driver's controller
-  frc::XboxController m_driverController{OIConstants::kDriverControllerPort};
+  frc2::CommandXboxController m_driverController{OIConstants::kDriverControllerPort};
 
   // Shuffleboard Entries
   nt::GenericEntry *m_SetPoseXEntryPtr;
@@ -108,11 +110,29 @@ class RobotContainer {
 
   bool              m_lastAllowShooterControlState;
 
+  nt::GenericEntry *m_allowArmControlEntryPtr;
+  nt::GenericEntry *m_armPositionEntryPtr;
+
+  bool              m_lastAllowArmControlState;
+  double            m_armLastDashboardSetPoint;
+
   /* Create the command that are used in various tabs on the            */
   /* Shuffleboard.                                                      */
 
   /* Subsytem Commands.                                                 */
-  frc2::CommandPtr m_grabNote = m_intake.GrabNoteCommand(4500_rpm);
+  frc2::CommandPtr m_grabNote       = m_intake.GrabNoteCommand(9000_rpm);
+  frc2::CommandPtr m_slowRemoveNote = ShootNoteFromIntakeCommand(
+                                                                  &m_intake,     // intake subsystem pointer
+                                                                  9000_rpm,      // intake output to shooter speed (rpm)
+                                                                  &m_shooter,    // shooter subsystem pointer
+                                                                  500_rpm,       // shooter left flywheel speed (rpm)
+                                                                  500_rpm,       // shooter right flywheel speed (rpm
+                                                                  7.5_s,         // shooter flywheel spinup timeout
+                                                                  1_s            // after intake enabled time till complete
+                                                                ).ToPtr();
+
+  frc2::CommandPtr m_armUp          = m_arm.ArmUpCommmand();
+  frc2::CommandPtr m_armDown        = m_arm.ArmDownCommand();
 
   /* Teleops Commands.                                                  */
   frc2::CommandPtr m_pathToBlueAmp = m_odometry.PathToPoseCommand(m_odometry.GetPoseFromAprilTagId(BLUE_AMP_TAG_ID, {0_m, -((DriveConstants::kWheelBase/2)+0.25_m), frc::Rotation2d{90_deg}}), 0_mps, 0_m).WithName("Path To Blue Amp");

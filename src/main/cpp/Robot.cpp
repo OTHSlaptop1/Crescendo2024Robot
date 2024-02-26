@@ -21,7 +21,9 @@ void Robot::RobotInit()
 
    // Forward the photon vision port so it can be seen from computers
    // when tethered to the USB port on the roboRIO.
-   wpi::PortForwarder::GetInstance().Add(5800, "photonvision.local", 5800);
+   // NOTE: I havne't been able to get this to work when testing, I have only
+   //       been able to get access to photon vision through the FRC Radio Connection.
+//   wpi::PortForwarder::GetInstance().Add(5800, "photonvision.local", 5800);
 }
 
 /**

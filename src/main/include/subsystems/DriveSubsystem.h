@@ -9,6 +9,7 @@
 
 #include <ctre/phoenix6/Pigeon2.hpp>
 
+#include <frc/controller/PIDController.h>
 #include <frc/filter/SlewRateLimiter.h>
 #include <frc/geometry/Pose2d.h>
 #include <frc/geometry/Rotation2d.h>
@@ -48,6 +49,18 @@ class DriveSubsystem : public frc2::SubsystemBase {
    * @param RobotRelativeSpeeds    ChassisSpeeds for the robot.
    */
   void DriveRobotRelative(frc::ChassisSpeeds RobotRelativeSpeeds);
+
+  /**
+   * Drives the robot at given x and y speed while using PID to control the rotation.
+   * Rotation will be locked to the speakers location.  Speeds range from [-1, 1] and
+   * the linear speeds have no effect on the angular speed.
+   *
+   * @param xSpeed        Speed of the robot in the x direction (forward/backwards).
+   * @param ySpeed        Speed of the robot in the y direction (sideways).
+   *
+   * ** NOTE ** This function uses field relative controls while operating.
+   */
+  void DriveWithSpeakerAim(units::meters_per_second_t xSpeed, units::meters_per_second_t ySpeed);
 
   /**
    * Sets the wheels into an X formation to prevent movement.
@@ -179,6 +192,10 @@ class DriveSubsystem : public frc2::SubsystemBase {
 
   // The gyro sensor - Pigeon 2.0
   ctre::phoenix6::hardware::Pigeon2 pidgey_gyro{DriveConstants::kPigeonGyroCanId, DriveConstants::kPigeonBusName};
+
+  // The following variable holds the PID controller used to automatically aim
+  // at the speaker.
+  frc::PIDController m_aimController;
 
   // Slew rate filter variables for controlling lateral acceleration
   double m_currentRotation       = 0.0;
