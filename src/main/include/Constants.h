@@ -238,22 +238,26 @@ namespace ArmConstants {
    constexpr double kArmEncoderPositionFactor = (2 * std::numbers::pi);  // radians
    constexpr double kArmEncoderVelocityFactor =  (2 * std::numbers::pi) / 60.0;  // radians per second
 
-   constexpr units::degree_t kArmMinimumAngle = -13.5_deg;
+   constexpr units::degree_t kArmMinimumAngle = -1.0_deg;
    constexpr units::degree_t kArmMaximumAngle = 90_deg;
+   constexpr units::degree_t kArmFeedforwardOffsetAngle = 13.5_deg;
+
+   constexpr units::radian_t kArmEncoderPositionPIDMinInput = 0_rad;
+   constexpr units::radian_t kArmEncoderPositionPIDMaxInput = units::radian_t{kArmEncoderPositionFactor};
 
    /* Arm PID constants.            */
-   constexpr double kArmP  = 1.0;
+   constexpr double kArmP  = 0.785;
    constexpr double kArmI  = 0.0;
-   constexpr double kArmD  = 0.0;
+   constexpr double kArmD  = 0.1675;//0.155;
    constexpr double kArmFF = 0.0;
    constexpr double kArmMinOutput = -1;
    constexpr double kArmMaxOutput = 1;
 
-   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{25_deg_per_s};
-   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{35_deg_per_s_sq};
+   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{60_deg_per_s};  // 65
+   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{75_deg_per_s_sq};
 
    constexpr int kArmLeaderCanId  = 13;
-   constexpr int kArmFollwerCanId = 14;
+   constexpr int kArmFollwerCanId = 15;
 
    constexpr rev::CANSparkMax::IdleMode kArmMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 
@@ -261,34 +265,21 @@ namespace ArmConstants {
    constexpr units::ampere_t kFollowerMotorCurrentLimit = 60_A;
 
 //xxx need to figure out these values???  maybe start with initial values form recalc...
-   constexpr units::volt_t kS = 1_V;
-   constexpr units::volt_t kG = 1_V;
-   constexpr auto kV = 0.5_V * 1_s / 1_rad;
-   constexpr auto kA = 0.1_V * 1_s * 1_s / 1_rad;
+   constexpr units::volt_t kS = 0.100_V;
+   constexpr units::volt_t kG = 0.785_V;
+   constexpr auto kV = 1.30_V * 1_s / 1_rad;
+   constexpr auto kA = 0.05_V * 1_s * 1_s / 1_rad;
 
 } // namespace ArmContrants
 
 namespace LiftConstants {
 
-   constexpr int kLiftCanId  = 15;
+   constexpr int kLiftCanId  = 14;
 
 } // namespace LiftContrants
 
-namespace AutoConstants {
-constexpr auto kMaxSpeed               = 3_mps;
-constexpr auto kMaxAcceleration        = 3_mps_sq;
-constexpr auto kMaxAngularSpeed        = 3.142_rad_per_s;
-constexpr auto kMaxAngularAcceleration = 3.142_rad_per_s_sq;
-
-constexpr double kPXController = 0.5;
-constexpr double kPYController = 0.5;
-constexpr double kPThetaController = 0.5;
-
-extern const frc::TrapezoidProfile<units::radians>::Constraints
-    kThetaControllerConstraints;
-}  // namespace AutoConstants
-
-namespace OIConstants {
-constexpr int kDriverControllerPort = 0;
-constexpr double kDriveDeadband = 0.1;
+namespace OIConstants
+{
+   constexpr int kDriverControllerPort = 0;
+   constexpr double kDriveDeadband = 0.1;
 }  // namespace OIConstants

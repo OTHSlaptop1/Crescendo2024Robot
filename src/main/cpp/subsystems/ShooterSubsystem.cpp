@@ -26,7 +26,7 @@ ShooterSubsystem::ShooterSubsystem()
    TalonFXConfigs.CurrentLimits.SupplyCurrentLimit       = kShooterMotorCurrentLimit;
    TalonFXConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-   TalonFXConfigs.MotorOutput.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Brake;
+   TalonFXConfigs.MotorOutput.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Coast;
    TalonFXConfigs.MotorOutput.Inverted    = ctre::phoenix6::signals::InvertedValue::Clockwise_Positive;
 
    /* Apply the configuration changes to the left flywheel motor        */
@@ -37,7 +37,7 @@ ShooterSubsystem::ShooterSubsystem()
    TalonFXConfigs.CurrentLimits.SupplyCurrentLimit       = kShooterMotorCurrentLimit;
    TalonFXConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-   TalonFXConfigs.MotorOutput.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Brake;
+   TalonFXConfigs.MotorOutput.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Coast;
    TalonFXConfigs.MotorOutput.Inverted    = ctre::phoenix6::signals::InvertedValue::Clockwise_Positive;
 
    m_rightFlywheel.GetConfigurator().Apply(TalonFXConfigs);
@@ -151,35 +151,7 @@ void ShooterSubsystem::RunShooter(units::revolutions_per_minute_t leftSpeed, uni
    /* Stop the shooter motor.                                           */
 void ShooterSubsystem::StopShooter(void)
 {
-   /* Create the velocity voltage object to set the velocity PID.       */
-   // parameters:
-   //         velocity in RPS
-   //         acceleration in RPS^2
-   //         EnableFOC -> requires Pro License
-   //         FeedForward -> Feedforward to apply in volts.
-   //         ConfigurationSlot - 0
-   //         OverrideBrakeDurNeutral
-   //         LimitForwardMotion - use limit switch for forward motion
-   //         LimitReverseMotion - use limit switch for reverse motion
-   controls::VelocityVoltage m_leftVoltageVelocity{units::angular_velocity::turns_per_second_t{0.0},
-                                                   0_tr_per_s_sq,
-                                                   false,
-                                                   m_leftFlywheelFeedForward.Calculate(units::angular_velocity::turns_per_second_t{0.0}),
-                                                   0,
-                                                   false,
-                                                   false,
-                                                   false
-                                                  };
-
-   controls::VelocityVoltage m_rightVoltageVelocity{units::angular_velocity::turns_per_second_t{0.0},
-                                                    0_tr_per_s_sq,
-                                                    false,
-                                                    m_rightFlywheelFeedForward.Calculate(units::angular_velocity::turns_per_second_t{0.0}),
-                                                    0,
-                                                    false,
-                                                    false,
-                                                    false
-                                                   };
+   ctre::phoenix6::controls::CoastOut m_coast{};
 
    /* Save the specified speeds to the current set point spseed values.  */
    m_leftSetpointSpeed  = 0.0_rpm;
@@ -189,9 +161,9 @@ void ShooterSubsystem::StopShooter(void)
    m_shooterLeftSetpointPublisher.Set(0.0); // in RPM
    m_shooterRightSetpointPublisher.Set(0.0);
 
-   /* Apply the new set point values to the flywheels.                  */
-   m_leftFlywheel.SetControl(m_leftVoltageVelocity);
-   m_rightFlywheel.SetControl(m_rightVoltageVelocity);
+   /* Set the flywheels to coast out to stopping.                       */
+   m_leftFlywheel.SetControl(m_coast);
+   m_rightFlywheel.SetControl(m_coast);
 }
 
    /* Set the speed of the left shooter flywheel to running at.         */

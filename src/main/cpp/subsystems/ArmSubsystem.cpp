@@ -19,11 +19,6 @@ using namespace ArmConstants;
    /* command.                                                          */
 #define ARM_UP_THRESHOLD_PERCENT                                     (0.98)
 
-   /* The following constant defines the threhold percentage of the     */
-   /* targeted Arm Position that the Arm must attain to complete this   */
-   /* command.                                                          */
-#define ARM_DOWN_THRESHOLD_PERCENT                                     (1.02)
-
 ArmSubsystem::ArmSubsystem()
     // The TrapezoidProfileSubsystem used by the subsystem
     : TrapezoidProfileSubsystem(
@@ -53,6 +48,14 @@ ArmSubsystem::ArmSubsystem()
 //xxx consider using SetSoftLimit to set end points...
 //xxx looks like you call SetSoftLimit and also EnableSoftLimit  (matches scaling units set by user. default is rotations,
 //xxx should be in radians since we set the position conversion factor above...
+
+   // Enable PID wrap around for the turning motor. This will allow the PID
+   // controller to go through 0 to get to the setpoint i.e. going from 350
+   // degrees to 10 degrees will go through 0 rather than the other direction
+   // which is a longer route.
+   m_leaderPIDController.SetPositionPIDWrappingEnabled(true);
+   m_leaderPIDController.SetPositionPIDWrappingMinInput(kArmEncoderPositionPIDMinInput.value());
+   m_leaderPIDController.SetPositionPIDWrappingMaxInput(kArmEncoderPositionPIDMaxInput.value());
 
    // Set the leader PID Controller to use the duty cycle encoder on the swerve
    // module instead of the built in NEO encoder.
@@ -100,11 +103,20 @@ ArmSubsystem::ArmSubsystem()
    m_leaderSparkMax.BurnFlash();
    m_followerSparkMax.BurnFlash();
 
+   /* Set the goal to the initial position.  We can't seem to do it in */
+   /* the contructor initializers without throwing an exception.       */
+   this->SetGoal(units::radian_t{m_armAbsoluteEncoder.GetPosition()});
+
+   /* Enable the arm for use.                                        */
+   this->Enable();
+
    // Start publishing arm state information with the "/Arm" key
    m_armMeasuredPositionPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/MeasuredPosition").Publish();
    m_armSetpointPositionPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/SetpointPosition").Publish();
    m_armSetpointVelocityPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/SetpointVelocity").Publish();
    m_armOutputFeedForwardPublisher = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/OutputFeedForward").Publish();
+   m_armCurrentPublisher           = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/Current").Publish();
+   m_armAppliedOutputPublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/AppliedOutput").Publish();
 }
 
    /* The following function consumes the output of the trapezoid       */
@@ -116,24 +128,39 @@ ArmSubsystem::ArmSubsystem()
 void ArmSubsystem::UseState(frc::TrapezoidProfile<units::radians>::State setpoint)
 {
    /* Calculate the feed forward from the specified setpoint.           */
-   units::volt_t feedforward = m_feedForward.Calculate(setpoint.position, setpoint.velocity);
+   units::volt_t feedforward = m_feedForward.Calculate((setpoint.position-kArmFeedforwardOffsetAngle), setpoint.velocity);
 
    /* Log the current arm output values.                                */
-   m_armMeasuredPositionPublisher.Set(units::degree_t(units::radian_t{m_armAbsoluteEncoder.GetPosition()}).value());
+   m_armMeasuredPositionPublisher.Set(GetArmAngle().value());
    m_armSetpointPositionPublisher.Set(units::degree_t(setpoint.position).value());
    m_armSetpointVelocityPublisher.Set(setpoint.velocity.value());
    m_armOutputFeedForwardPublisher.Set(feedforward.value());
+   m_armCurrentPublisher.Set(m_leaderSparkMax.GetOutputCurrent());
 
    /* Set the position for the motor with the calculated feed forward   */
    /* value.                                                            */
    m_leaderPIDController.SetReference(setpoint.position.value(), rev::CANSparkMax::ControlType::kPosition, 0/*PID Slot*/, feedforward.value(), rev::SparkMaxPIDController::ArbFFUnits::kVoltage);
+
+//xxx test code...
+   m_armAppliedOutputPublisher.Set(m_leaderSparkMax.GetAppliedOutput()*12);
 }
 
    /* Returns the current angle of the arm in degress.                  */
+   /* ** NOTE ** The output range of the absolute encoder is mapped to  */
+   /*            be between -180 to 180 degrees.                        */
 units::degree_t ArmSubsystem::GetArmAngle(void)
 {
+   units::radian_t ret_val;
+
+   /* Get the current angle of the arm.                                 */
+   ret_val = units::radian_t{std::fmod(m_armAbsoluteEncoder.GetPosition(), units::radian_t{360.0}.value())};
+
+   /* Map the angle to the range [-180.0, 180.0].                       */
+   if(ret_val > units::radian_t{180.0_deg})
+      ret_val = ret_val - units::radian_t{360.0_deg};
+
    /* Simply return the current Arm Angle.                              */
-   return(units::degree_t(units::radian_t{m_armAbsoluteEncoder.GetPosition()}));
+   return(units::degree_t(ret_val));
 }
 
    /* Generates a command to set the arm position.                      */
@@ -155,9 +182,6 @@ frc2::CommandPtr ArmSubsystem::ArmUpCommmand(void)
    /* Uses reaching the maximum up angle to stop the command.           */
    frc2::CommandPtr ret_val = frc2::FunctionalCommand(
                                                       [this] {
-                                                               /* First make sure that the arm subsystem is currently set to be     */
-                                                               /* enabled.                                                          */
-                                                               this->Enable();
 
                                                                /* Set the goal for moving the arm subsystem to be maximum angle     */
                                                                /* supported by the arm.                                             */
@@ -200,10 +224,6 @@ frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
    /* Uses reaching the maximum up angle to stop the command.           */
    frc2::CommandPtr ret_val = frc2::FunctionalCommand(
                                                       [this] {
-                                                               /* First make sure that the arm subsystem is currently set to be     */
-                                                               /* enabled.                                                          */
-                                                               this->Enable();
-
                                                                /* Set the goal for moving the arm subsystem to be minimum angle     */
                                                                /* supported by the arm.                                             */
                                                                this->SetGoal(units::radian_t{kArmMinimumAngle});
@@ -222,7 +242,7 @@ frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
                                                                               },
                                                       [this]{
                                                                /* Now check to see if we are at the minimum angle.                  */
-                                                               if(this->GetArmAngle() <= (kArmMinimumAngle * ARM_DOWN_THRESHOLD_PERCENT))
+                                                               if(this->GetArmAngle() <= 2.5_deg)
                                                                   return(true);
                                                                else
                                                                   return(false);

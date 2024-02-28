@@ -24,7 +24,8 @@ class ArmSubsystem : public frc2::TrapezoidProfileSubsystem<units::radians>
    /**
     * Get the current angle of the arm.
     *
-    * @return The current angle of the Arm in degrees.
+    * @return The current angle of the Arm in degrees. The range is mapped
+    *         to -180 to 180 degrees.
     *
     */
    units::degree_t GetArmAngle(void);
@@ -82,5 +83,7 @@ class ArmSubsystem : public frc2::TrapezoidProfileSubsystem<units::radians>
    nt::DoublePublisher m_armSetpointPositionPublisher;
    nt::DoublePublisher m_armSetpointVelocityPublisher;
    nt::DoublePublisher m_armOutputFeedForwardPublisher;
+   nt::DoublePublisher m_armCurrentPublisher;
+   nt::DoublePublisher m_armAppliedOutputPublisher;
 
 };

@@ -50,10 +50,10 @@ RobotContainer::RobotContainer() {
                                                                                                            &m_intake,      // intake subsystem pointer
                                                                                                            9500_rpm,       // intake output to shooter speed (rpm)
                                                                                                            &m_shooter,     // shooter subsystem pointer
-                                                                                                           5500_rpm,       // shooter left flywheel speed (rpm)
-                                                                                                           4500_rpm,       // shooter right flywheel speed (rpm
+                                                                                                           3500_rpm,       // shooter left flywheel speed (rpm)
+                                                                                                           3000_rpm,       // shooter right flywheel speed (rpm
                                                                                                            7.5_s,          // shooter flywheel spinup timeout
-                                                                                                           1_s             // after intake enabled time till complete
+                                                                                                           0.750_s         // after intake enabled time till complete
                                                                                                           ).ToPtr()));
 #endif
 #endif
@@ -136,10 +136,10 @@ RobotContainer::RobotContainer() {
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Drive Subsystem", m_drive).WithPosition(0, 0);
   m_maxSpeedEntryPtr                 = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Speed", m_drive.GetMaxSpeed().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(kDefaultMaxSpeed.value())}}).WithPosition(0, 1).GetEntry();
   m_maxAngularSpeedEntryPtr          = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Angular Speed", units::degrees_per_second_t(m_drive.GetMaxAngularSpeed()).value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(units::degrees_per_second_t(kDefaultMaxAngularSpeed).value())}}).WithPosition(0, 2).GetEntry();
-  m_triggerBasedSpeedControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Trigger Speed Control", false).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
+  m_triggerBasedSpeedControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Trigger Speed Control", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
   m_fieldRelativeStateEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Field Relative", m_drive.GetFieldRelativeState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
   m_limitSlewRateEntryPtr            = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Limit Slew Rate", m_drive.GetLimitSlewRateState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 5).GetEntry();
-  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").AddDouble("Gyro Heading", [this]{ return(m_drive.GetHeading().value()); }).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").AddDouble("Gyro Heading", [this]{ return(std::fabs((std::fmod(m_drive.GetHeading().value(), 360.0)))); }).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
 
   /* Add a button to reset the gyro using a triggered network button    */
   /* command.  Note this clears the boolean after running the function  */
@@ -233,9 +233,33 @@ void RobotContainer::ConfigureButtonBindings()
 #ifdef USE_SHOOTER
    /* Set the Right Bumper to run the shooter while the right bumper is */
    /* pressed then stop the shooter once the bumper is released.        */
-// do we want to be able to shoot the note from the driver controller????  or at least maybe just poop it out?
-//xxxx   frc2::JoystickButton(&m_driverController, frc::XboxController::Button::kRightBumper).WhileTrue(m_shooter.ShootNoteWithTriggerCommand(5500_rpm, 4500_rpm));
+   m_driverController.RightBumper().WhileTrue(std::move(ShootNoteFromIntakeCommand(
+                                                                                  &m_intake,      // intake subsystem pointer
+                                                                                  9500_rpm,       // intake output to shooter speed (rpm)
+                                                                                  &m_shooter,     // shooter subsystem pointer
+                                                                                  3500_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  3000_rpm,       // shooter right flywheel speed (rpm
+                                                                                  7.5_s,          // shooter flywheel spinup timeout
+                                                                                  0.750_s         // after intake enabled time till complete
+                                                                                  ).ToPtr()));
+
+   /* Set the Left Bumper to run the shooter while the left bumper is   */
+   /* pressed then stop the shooter once the bumper is released.        */
+   m_driverController.LeftBumper().WhileTrue(std::move(ShootNoteFromIntakeCommand(
+                                                                                  &m_intake,      // intake subsystem pointer
+                                                                                  9500_rpm,       // intake output to shooter speed (rpm)
+                                                                                  &m_shooter,     // shooter subsystem pointer
+                                                                                  500_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  500_rpm,       // shooter right flywheel speed (rpm
+                                                                                  7.5_s,          // shooter flywheel spinup timeout
+                                                                                  0.750_s         // after intake enabled time till complete
+                                                                                  ).ToPtr()));
+
 #endif
+
+//#ifdef USE_ARM
+
+//#endif
 }
 
    // The following function is responsible for getting the currently
@@ -382,7 +406,7 @@ void RobotContainer::PumpShuffleBoard(void)
 
       /* Check to see if the value read from the dashboard is differnt  */
       /* than the last set point specified via the dashboard.           */
-      if(m_armLastDashboardSetPoint = tempValue)
+      if(m_armLastDashboardSetPoint != tempValue)
       {
          /* The new setpoint is different the previously stored last    */
          /* setpoint value.  Move to this angle as the new goal.        */
@@ -416,7 +440,6 @@ void RobotContainer::PumpShuffleBoard(void)
       m_lastAllowArmControlState = false;
    }
 #endif
-
 
    /* Now check to see if setting the pose is currently allowed or if we*/
    /* are just going to display the current pose.                       */
