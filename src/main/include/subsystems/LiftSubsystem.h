@@ -8,7 +8,7 @@
 
 #include <CANVenom.h>
 
-class LiftSubsystem : public frc2::SubsystemBase 
+class LiftSubsystem : public frc2::SubsystemBase
 {
  public:
   LiftSubsystem();
@@ -18,14 +18,25 @@ class LiftSubsystem : public frc2::SubsystemBase
    */
   void Periodic() override;
 
-  void LiftUp(void);
+  /**
+   * Function to move the lift hook up and down.
+   *
+   *  @param output  The voltage to use to move the lift
+   *                 hook up and down.  Positive values up.
+   *
+   */
+  void MoveLift(units::volt_t output);
 
-  void LiftDown(void);
+  /* Function to stop the moving of the lift hook.                      */
+  void StopLift(void);
 
-  double GetLiftPosition(void);
+  /**
+   * Function to set the lift into hold mode.
+   */
+  void HoldPosition(void);
 
  private:
-  
+
   // The Lift Motor Controller.
   frc::CANVenom m_liftVenomMotor;
 

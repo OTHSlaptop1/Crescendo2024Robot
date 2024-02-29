@@ -40,6 +40,10 @@ void Robot::RobotPeriodic()
    /* the updated state.                                                */
    m_container.PumpShuffleBoard();
 
+   /* Pump the periodic polling in the Robot Container that is used to  */
+   /* control the controller rumble function.                           */
+   m_container.PumpRumble();
+
    /* Run the command scheduler.                                        */
    frc2::CommandScheduler::GetInstance().Run();
 }
@@ -64,25 +68,41 @@ void Robot::DisabledPeriodic() {}
  * if-else structure below with additional strings. If using the SendableChooser
  * make sure to add them to the chooser code above as well.
  */
-void Robot::AutonomousInit() {
-  m_autonomousCommand = m_container.GetAutonomousCommand();
+void Robot::AutonomousInit()
+{
+   /* Reset the Arm location to its current position.                   */
+   m_container.ResetArmToCurrentPosition();
 
-  if(m_autonomousCommand) {
-    m_autonomousCommand->Schedule();
-  }
+   /* Get the currently selected autonomous command from the robot      */
+   /* container.                                                        */
+   m_autonomousCommand = m_container.GetAutonomousCommand();
+
+   /* Check to make sure that this command appears to be valid.         */
+   if(m_autonomousCommand)
+   {
+      /* The selected command appears to be valid.  Attempt to scheduler*/
+      /* it for execution.                                              */
+      m_autonomousCommand->Schedule();
+   }
 }
 
 void Robot::AutonomousPeriodic() {}
 
-void Robot::TeleopInit() {
+void Robot::TeleopInit()
+{
   // This makes sure that the autonomous stops running when
   // teleop starts running. If you want the autonomous to
   // continue until interrupted by another command, remove
   // this line or comment it out.
-  if (m_autonomousCommand) {
-    m_autonomousCommand->Cancel();
-    m_autonomousCommand.reset();
+  if(m_autonomousCommand)
+  {
+     m_autonomousCommand->Cancel();
+     m_autonomousCommand.reset();
   }
+
+  /* Reset the Arm location to its current position (in case it has     */
+  /* drifted down during the end of Autonmous.                          */
+  m_container.ResetArmToCurrentPosition();
 }
 
 /**

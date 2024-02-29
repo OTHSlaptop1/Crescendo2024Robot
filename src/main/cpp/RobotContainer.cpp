@@ -16,6 +16,7 @@
 #include <frc2/command/SequentialCommandGroup.h>
 #include <frc2/command/SwerveControllerCommand.h>
 #include <frc2/command/button/JoystickButton.h>
+#include <frc2/command/button/POVButton.h>
 #include <units/angle.h>
 #include <units/velocity.h>
 
@@ -50,8 +51,8 @@ RobotContainer::RobotContainer() {
                                                                                                            &m_intake,      // intake subsystem pointer
                                                                                                            9500_rpm,       // intake output to shooter speed (rpm)
                                                                                                            &m_shooter,     // shooter subsystem pointer
-                                                                                                           3500_rpm,       // shooter left flywheel speed (rpm)
-                                                                                                           3000_rpm,       // shooter right flywheel speed (rpm
+                                                                                                           3250_rpm,       // shooter left flywheel speed (rpm)
+                                                                                                           2750_rpm,       // shooter right flywheel speed (rpm
                                                                                                            7.5_s,          // shooter flywheel spinup timeout
                                                                                                            0.750_s         // after intake enabled time till complete
                                                                                                           ).ToPtr()));
@@ -237,8 +238,8 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  3500_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  3000_rpm,       // shooter right flywheel speed (rpm
+                                                                                  3250_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  2750_rpm,       // shooter right flywheel speed (rpm
                                                                                   7.5_s,          // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
@@ -257,9 +258,13 @@ void RobotContainer::ConfigureButtonBindings()
 
 #endif
 
-//#ifdef USE_ARM
+#ifdef USE_ARM
+   /* Set the "POV" D-pad up button to command the arm to move up.       */
+   frc2::POVButton(&m_driverController, 0).WhileTrue(m_arm.ArmUpCommmand());
 
-//#endif
+   /* Set the "POV" D-pad down button to command the arm to move down.   */
+   frc2::POVButton(&m_driverController, 180).WhileTrue(m_arm.ArmDownCommand());
+#endif
 }
 
    // The following function is responsible for getting the currently
@@ -465,6 +470,36 @@ void RobotContainer::PumpShuffleBoard(void)
    /* in the field object on the shuffleboard.                          */
    m_field.SetRobotPose(m_odometry.GetPose());
 #endif
+}
+
+  /* The following function is responsible for pumping the logic used to*/
+  /* detect events that will enable and disable the rumble function of  */
+  /* the controller.  This should be called during the robots period    */
+  /* loop.                                                              */
+void RobotContainer::PumpRumble(void)
+{
+   /* Check to see if there is currently a NOTE in the intake.          */
+   if(m_intake.IsNoteDetected())
+   {
+      /* There is currently a NOTE in the intake.  Enable rumble.       */
+      m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.20);
+   }
+   else
+   {
+      /* There is not currently a NOTE in the intake.  Disable rumble.  */
+      m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.0);
+   }
+}
+
+  /* The following function is to reset the arm to its current position.*/
+  /* This should be done in each XXXInit phase of the robot to make up  */
+  /* for a possible change in position that can occure when the motors  */
+  /* are unpowered during current disabled phases.                      */
+void RobotContainer::ResetArmToCurrentPosition(void)
+{
+   /* Simply get the arms current position and set its goal position to */
+   /* be that position.                                                 */
+   m_arm.SetGoal(units::radian_t{m_arm.GetArmAngle()});
 }
 
   /* Static command factory used to retrieve autonoumous paths from the  */

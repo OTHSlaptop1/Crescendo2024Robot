@@ -45,9 +45,18 @@ ArmSubsystem::ArmSubsystem()
    m_armAbsoluteEncoder.SetPositionConversionFactor(kArmEncoderPositionFactor);
    m_armAbsoluteEncoder.SetVelocityConversionFactor(kArmEncoderVelocityFactor);
 
+   /* Invert the output of the absolute encoder.                        */
+   m_armAbsoluteEncoder.SetInverted(true);
+
 //xxx consider using SetSoftLimit to set end points...
 //xxx looks like you call SetSoftLimit and also EnableSoftLimit  (matches scaling units set by user. default is rotations,
 //xxx should be in radians since we set the position conversion factor above...
+#if 0
+   /* Set limits in the spark max for the controller to not move past  */
+   /* the maximum angles of motion.                                    */
+   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, units::radian_t{kArmMaximumAngle}.value());
+   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, units::radian_t{kArmMinimumAngle}.value());
+#endif
 
    // Enable PID wrap around for the turning motor. This will allow the PID
    // controller to go through 0 to get to the setpoint i.e. going from 350

@@ -53,7 +53,22 @@ class RobotContainer {
 
   frc2::CommandPtr GetAutonomousCommand();
 
+  /* The following function is responsible for pumping the shuffle board*/
+  /* items to keep them update date.  This should be called during a    */
+  /* robots periodic loop.                                              */
   void PumpShuffleBoard(void);
+
+  /* The following function is responsible for pumping the logic used to*/
+  /* detect events that will enable and disable the rumble function of  */
+  /* the controller.  This should be called during the robots period    */
+  /* loop.                                                              */
+  void PumpRumble(void);
+
+  /* The following function is to reset the arm to its current position.*/
+  /* This should be done in each XXXInit phase of the robot to make up  */
+  /* for a possible change in position that can occure when the motors  */
+  /* are unpowered during current disabled phases.                      */
+  void ResetArmToCurrentPosition(void);
 
  private:
 

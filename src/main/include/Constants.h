@@ -113,7 +113,7 @@ constexpr double kTurningMaxOutput = 1;
 constexpr rev::CANSparkMax::IdleMode kDrivingMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 constexpr rev::CANSparkMax::IdleMode kTurningMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 
-constexpr units::ampere_t kDrivingMotorCurrentLimit = 60_A;
+constexpr units::ampere_t kDrivingMotorCurrentLimit = 50_A;
 constexpr units::ampere_t kTurningMotorCurrentLimit = 40_A;
 }  // namespace ModuleConstants
 
@@ -174,7 +174,7 @@ constexpr units::revolutions_per_minute_t kShooterMinimumSpeed = -6250_rpm;
 constexpr units::revolutions_per_minute_t kShooterMaximumSpeed = 6250_rpm;   // Falcon 500 free speed is 6380 RPM so less than that is good.
 
 // Shooter motors current limits.
-constexpr double kShooterMotorCurrentLimit = 80.0;
+constexpr double kShooterMotorCurrentLimit = 40.0;
 
 // Shooter left motor PID constants.
 constexpr double kShooterLeftP = 0.12884;
@@ -238,8 +238,8 @@ namespace ArmConstants {
    constexpr double kArmEncoderPositionFactor = (2 * std::numbers::pi);  // radians
    constexpr double kArmEncoderVelocityFactor =  (2 * std::numbers::pi) / 60.0;  // radians per second
 
-   constexpr units::degree_t kArmMinimumAngle = -1.0_deg;
-   constexpr units::degree_t kArmMaximumAngle = 90_deg;
+   constexpr units::degree_t kArmMinimumAngle = 2.5_deg;
+   constexpr units::degree_t kArmMaximumAngle = 99_deg;
    constexpr units::degree_t kArmFeedforwardOffsetAngle = 13.5_deg;
 
    constexpr units::radian_t kArmEncoderPositionPIDMinInput = 0_rad;
@@ -248,13 +248,13 @@ namespace ArmConstants {
    /* Arm PID constants.            */
    constexpr double kArmP  = 0.785;
    constexpr double kArmI  = 0.0;
-   constexpr double kArmD  = 0.1675;//0.155;
+   constexpr double kArmD  = 0.180;//0.155;
    constexpr double kArmFF = 0.0;
    constexpr double kArmMinOutput = -1;
    constexpr double kArmMaxOutput = 1;
 
-   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{60_deg_per_s};  // 65
-   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{75_deg_per_s_sq};
+   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{90_deg_per_s};  // 65
+   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{90_deg_per_s_sq};
 
    constexpr int kArmLeaderCanId  = 13;
    constexpr int kArmFollwerCanId = 15;
@@ -275,6 +275,12 @@ namespace ArmConstants {
 namespace LiftConstants {
 
    constexpr int kLiftCanId  = 14;
+
+   /* Lift PID constants.                                               */
+   constexpr double kLiftP  = 0.5;
+   constexpr double kLiftI  = 0.0;
+   constexpr double kLiftD  = 0.0;
+
 
 } // namespace LiftContrants
 
