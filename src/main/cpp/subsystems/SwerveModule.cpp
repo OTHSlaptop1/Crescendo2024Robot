@@ -81,7 +81,6 @@ SwerveModule::SwerveModule(const int drivingCANId, const int turningCANId)
    m_drivingSparkMax.EnableVoltageCompensation(12.0);
    m_turningSparkMax.EnableVoltageCompensation(12.0);
 
-
    /* *** NOTE *** Check out the below resources for more information on*/
    /*            what the below does.  If you increase the Odometry     */
    /*            Periodic Rate you might need to change the values      */
@@ -102,7 +101,7 @@ SwerveModule::SwerveModule(const int drivingCANId, const int turningCANId)
    /* Set the spark max periodic frame periods for each of the turning  */
    /* spark max motor controllers.                                      */
    m_turningSparkMax.SetPeriodicFramePeriod(rev::CANSparkLowLevel::PeriodicFrame::kStatus0, 55);      // Applied *** Output, Faults, Stick Faults, Is Follower
-   m_turningSparkMax.SetPeriodicFramePeriod(rev::CANSparkLowLevel::PeriodicFrame::kStatus1, 65535);   // Motor Velocity, Motor Tempature, Motor Voltage, Motor Current
+   m_turningSparkMax.SetPeriodicFramePeriod(rev::CANSparkLowLevel::PeriodicFrame::kStatus1, 15);      // Motor Velocity, Motor Tempature, Motor Voltage, Motor Current
    m_turningSparkMax.SetPeriodicFramePeriod(rev::CANSparkLowLevel::PeriodicFrame::kStatus2, 65535);   // Motor Position
    m_turningSparkMax.SetPeriodicFramePeriod(rev::CANSparkLowLevel::PeriodicFrame::kStatus3, 65535);   // Analog Sensor Voltage, Velocity, Position
    m_turningSparkMax.SetPeriodicFramePeriod(rev::CANSparkLowLevel::PeriodicFrame::kStatus4, 65535);   // Alternate Encoder Velocity, Position
@@ -216,6 +215,20 @@ frc::SwerveModuleState SwerveModule::SetDesiredState(const frc::SwerveModuleStat
 #endif
 
    return(optimizedDesiredState);
+}
+
+   /* Get the current being used by the module drive motor.             */
+double SwerveModule::GetDriveCurrent(void)
+{
+   /* Simply return the output current for the drive motor.             */
+   return(m_drivingSparkMax.GetOutputCurrent());
+}
+
+   /* Get the current being used by the module turning motor.           */
+double SwerveModule::GetTurnCurrent(void)
+{
+   /* Simply return the output current for the turn motor.              */
+   return(m_turningSparkMax.GetOutputCurrent());
 }
 
    /* This function resets the drive encoders position.                 */

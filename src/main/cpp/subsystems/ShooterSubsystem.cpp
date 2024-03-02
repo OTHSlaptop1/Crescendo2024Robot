@@ -27,7 +27,7 @@ ShooterSubsystem::ShooterSubsystem()
    TalonFXConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
    TalonFXConfigs.MotorOutput.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Coast;
-   TalonFXConfigs.MotorOutput.Inverted    = ctre::phoenix6::signals::InvertedValue::Clockwise_Positive;
+   TalonFXConfigs.MotorOutput.Inverted    = ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive;
 
    /* Apply the configuration changes to the left flywheel motor        */
    /* controllers.                                                      */
@@ -38,13 +38,13 @@ ShooterSubsystem::ShooterSubsystem()
    TalonFXConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
    TalonFXConfigs.MotorOutput.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Coast;
-   TalonFXConfigs.MotorOutput.Inverted    = ctre::phoenix6::signals::InvertedValue::Clockwise_Positive;
+   TalonFXConfigs.MotorOutput.Inverted    = ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive;
 
    m_rightFlywheel.GetConfigurator().Apply(TalonFXConfigs);
 
-   /* Set the update frequency for the left and right flywheel velocity */
-   /* signals to be 50 Hz.                                              */
-   BaseStatusSignal::SetUpdateFrequencyForAll(50_Hz, m_leftFlywheel.GetVelocity(), m_rightFlywheel.GetVelocity(), m_leftFlywheel.GetSupplyCurrent(), m_rightFlywheel.GetSupplyCurrent());
+   /* Set the update frequency for the left and right flywheel signals  */
+   /* that we want to log to be 50 Hz.                                  */
+   BaseStatusSignal::SetUpdateFrequencyForAll(50_Hz, m_leftFlywheel.GetVelocity(), m_rightFlywheel.GetVelocity(), m_leftFlywheel.GetSupplyCurrent(), m_rightFlywheel.GetSupplyCurrent(), m_leftFlywheel.GetDeviceTemp(), m_rightFlywheel.GetDeviceTemp());
 
    /* Now optimize bus utilization for the left and right motors (this  */
    /* disables all unused signals for these devices.                    */
@@ -85,6 +85,9 @@ ShooterSubsystem::ShooterSubsystem()
 
    m_shooterLeftSupplyCurrentPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Shooter/LeftMeasuredSupplyCurrent").Publish();
    m_shooterRightSupplyCurrentPublisher = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Shooter/RightMeasuredSupplyCurrent").Publish();;
+
+   m_shooterLeftTemperaturePublisher    = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Shooter/LeftTemperature").Publish();
+   m_shooterRightTemperaturePublisher   = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Shooter/RightTemperature").Publish();;
 }
 
    /* Periodic method called once per scheduled loop.                   */
@@ -99,6 +102,10 @@ void ShooterSubsystem::Periodic()
    /* motors.                                                           */
    m_shooterLeftSupplyCurrentPublisher.Set((m_leftFlywheel.GetSupplyCurrent().GetValueAsDouble()));
    m_shooterRightSupplyCurrentPublisher.Set((m_rightFlywheel.GetSupplyCurrent().GetValueAsDouble()));
+
+   /* Log the deviec temperature of the left and right motors.          */
+   m_shooterLeftTemperaturePublisher.Set((m_leftFlywheel.GetDeviceTemp().GetValueAsDouble()));
+   m_shooterRightTemperaturePublisher.Set((m_rightFlywheel.GetDeviceTemp().GetValueAsDouble()));
 }
 
    /* Run the shooter motor at the specified speed in RPM.              */

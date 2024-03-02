@@ -63,17 +63,27 @@ DriveSubsystem::DriveSubsystem(bool fieldRelativeState, bool limitSlewRate)
    m_aimController.SetTolerance(kSpeakerAimTolerance.value());
 
    // Start publishing an array of module states with the "/SwerveStates" key
-   swerveMeasuredPublisher           = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/Measured").Publish();
-   swerveSetpointsPublisher          = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/Setpoints").Publish();
-   swerveSetPointsOptimizedPublisher = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/SetpointsOptimized").Publish();
+   m_swerveMeasuredPublisher           = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/Measured").Publish();
+   m_swerveSetpointsPublisher          = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/Setpoints").Publish();
+   m_swerveSetPointsOptimizedPublisher = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/SetpointsOptimized").Publish();
+   m_swerveDriveCurrentPublisher       = nt::NetworkTableInstance::GetDefault().GetDoubleArrayTopic("/SwerveStates/DriveCurrent").Publish();
+   m_swerveTurnCurrentPublisher        = nt::NetworkTableInstance::GetDefault().GetDoubleArrayTopic("/SwerveStates/TurnCurrent").Publish();
 }
 
    /* Function called periodically by the scheduler.                    */
 void DriveSubsystem::Periodic()
 {
-   /* Get the current measured state for each of the swerve modules and */
+   /* Get the measured state for each of the swerve modules and output  */
+   /* it for logging.                                                   */
+   m_swerveMeasuredPublisher.Set(std::vector{m_frontLeft.GetState(), m_frontRight.GetState(), m_rearLeft.GetState(), m_rearRight.GetState()});
+
+   /* Get the drive motor output current for each swerve module and     */
    /* output it for logging.                                            */
-   swerveMeasuredPublisher.Set(std::vector{m_frontLeft.GetState(), m_frontRight.GetState(), m_rearLeft.GetState(), m_rearRight.GetState()});
+   m_swerveDriveCurrentPublisher.Set(std::vector{m_frontLeft.GetDriveCurrent(), m_frontRight.GetDriveCurrent(), m_rearLeft.GetDriveCurrent(), m_rearRight.GetDriveCurrent()});
+
+   /* Get the turn motor output current for each swerve module and      */
+   /* output it for logging.                                            */
+   m_swerveTurnCurrentPublisher.Set(std::vector{m_frontLeft.GetTurnCurrent(), m_frontRight.GetTurnCurrent(), m_rearLeft.GetTurnCurrent(), m_rearRight.GetTurnCurrent()});
 }
 
 void DriveSubsystem::Drive(units::meters_per_second_t xSpeed, units::meters_per_second_t ySpeed, units::radians_per_second_t rot)
@@ -209,7 +219,7 @@ void DriveSubsystem::Drive(units::meters_per_second_t xSpeed, units::meters_per_
    auto [fl, fr, rl, rr] = setpointStates;
 
    /* Log the set points states information.                            */
-   swerveSetpointsPublisher.Set(setpointStates);
+   m_swerveSetpointsPublisher.Set(setpointStates);
 
    /* Set the desired state for each of the swerve modules and save the */
    /* return value to the optimized desired state.                      */
@@ -219,7 +229,7 @@ void DriveSubsystem::Drive(units::meters_per_second_t xSpeed, units::meters_per_
    rearRightOptimizedState  = m_rearRight.SetDesiredState(rr);
 
    /* Log the set points optimized information.                         */
-   swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
+   m_swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
 }
 
    /* Drives the robot at given x and y speed while using PID to control*/
@@ -342,7 +352,7 @@ void DriveSubsystem::DriveWithSpeakerAim(units::meters_per_second_t xSpeed, unit
    auto [fl, fr, rl, rr] = setpointStates;
 
    /* Log the set points states information.                            */
-   swerveSetpointsPublisher.Set(setpointStates);
+   m_swerveSetpointsPublisher.Set(setpointStates);
 
    /* Set the desired state for each of the swerve modules and save the */
    /* return value to the optimized desired state.                      */
@@ -352,7 +362,7 @@ void DriveSubsystem::DriveWithSpeakerAim(units::meters_per_second_t xSpeed, unit
    rearRightOptimizedState  = m_rearRight.SetDesiredState(rr);
 
    /* Log the set points optimized information.                         */
-   swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
+   m_swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
 }
 
    /* This function drive the robot using the specified robot relative  */
@@ -386,7 +396,7 @@ void DriveSubsystem::DriveRobotRelative(frc::ChassisSpeeds RobotRelativeSpeeds)
    auto [fl, fr, rl, rr] = setpointStates;
 
    /* Log the set points states information.                            */
-   swerveSetpointsPublisher.Set(setpointStates);
+   m_swerveSetpointsPublisher.Set(setpointStates);
 
    /* Set the desired state for each of the swerve modules and save the */
    /* return value to the optimized desired state.                      */
@@ -396,7 +406,7 @@ void DriveSubsystem::DriveRobotRelative(frc::ChassisSpeeds RobotRelativeSpeeds)
    rearRightOptimizedState  = m_rearRight.SetDesiredState(rr);
 
    /* Log the set points optimized information.                         */
-   swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
+   m_swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
 }
 
    /* This function set the wheels into an X configuration with the     */

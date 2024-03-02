@@ -27,14 +27,14 @@ class SwerveModule {
    *
    * @return The current state of the module.
    */
-  frc::SwerveModuleState GetState() const;
+  frc::SwerveModuleState GetState(void) const;
 
   /**
    * Returns the current position of the module.
    *
    * @return The current position of the module.
    */
-  frc::SwerveModulePosition GetPosition() const;
+  frc::SwerveModulePosition GetPosition(void) const;
 
   /**
    * Sets the desired state for the module.
@@ -44,6 +44,20 @@ class SwerveModule {
    * @return the optimized state that was used by the module.
    */
   frc::SwerveModuleState SetDesiredState(const frc::SwerveModuleState& desiredState);
+
+  /** Get the current being used by the module drive motor.
+   *
+   * @return The current of the drive motor associated with this module.
+   *
+   */
+  double GetDriveCurrent(void);
+
+  /** Get the current being used by the module turning motor.
+   *
+   * @return The current of the turn motor associated with this module.
+   *
+   */
+  double GetTurnCurrent(void);
 
   /**
    * Zeroes all the SwerveModule encoders.

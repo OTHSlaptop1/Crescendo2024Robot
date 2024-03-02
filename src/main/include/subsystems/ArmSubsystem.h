@@ -31,6 +31,14 @@ class ArmSubsystem : public frc2::TrapezoidProfileSubsystem<units::radians>
    units::degree_t GetArmAngle(void);
 
    /**
+    * Set the arm position.
+    *
+    *  @param setpoint  Set point position to move the arm to.
+    *
+    */
+   void SetArmPosition(units::degree_t setpoint);
+
+   /**
     * Generates a command to set the arm position.
     *
     *  @param setpoint  Set point position to move the arm to.

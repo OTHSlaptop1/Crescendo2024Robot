@@ -51,15 +51,19 @@ RobotContainer::RobotContainer() {
                                                                                                            &m_intake,      // intake subsystem pointer
                                                                                                            9500_rpm,       // intake output to shooter speed (rpm)
                                                                                                            &m_shooter,     // shooter subsystem pointer
-                                                                                                           3250_rpm,       // shooter left flywheel speed (rpm)
-                                                                                                           2750_rpm,       // shooter right flywheel speed (rpm
-                                                                                                           7.5_s,          // shooter flywheel spinup timeout
+                                                                                                           4875_rpm,       // shooter left flywheel speed (rpm)
+                                                                                                           4375_rpm,       // shooter right flywheel speed (rpm
+                                                                                                           3.0_s,            // shooter flywheel spinup timeout
                                                                                                            0.750_s         // after intake enabled time till complete
                                                                                                           ).ToPtr()));
 #endif
 #endif
 
   /* Initialize the internal variables to a known initial state.        */
+  m_rumbleDutyCycleCount         = 0_s;
+  m_rumbleState                  = false;
+
+  m_driveGovernorActive          = false;
   m_resetGyroButton              = false;
   m_resetOdometryButton          = false;
 
@@ -137,6 +141,7 @@ RobotContainer::RobotContainer() {
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Drive Subsystem", m_drive).WithPosition(0, 0);
   m_maxSpeedEntryPtr                 = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Speed", m_drive.GetMaxSpeed().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(kDefaultMaxSpeed.value())}}).WithPosition(0, 1).GetEntry();
   m_maxAngularSpeedEntryPtr          = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Angular Speed", units::degrees_per_second_t(m_drive.GetMaxAngularSpeed()).value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(units::degrees_per_second_t(kDefaultMaxAngularSpeed).value())}}).WithPosition(0, 2).GetEntry();
+  m_driveSpeedGovernorEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Drive Speed Governor", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
   m_triggerBasedSpeedControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Trigger Speed Control", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
   m_fieldRelativeStateEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Field Relative", m_drive.GetFieldRelativeState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
   m_limitSlewRateEntryPtr            = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Limit Slew Rate", m_drive.GetLimitSlewRateState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 5).GetEntry();
@@ -238,9 +243,9 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  3250_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  2750_rpm,       // shooter right flywheel speed (rpm
-                                                                                  7.5_s,          // shooter flywheel spinup timeout
+                                                                                  4875_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  4375_rpm,       // shooter right flywheel speed (rpm
+                                                                                  3.0_s,          // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
 
@@ -250,9 +255,9 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  500_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  500_rpm,       // shooter right flywheel speed (rpm
-                                                                                  7.5_s,          // shooter flywheel spinup timeout
+                                                                                  500_rpm,        // shooter left flywheel speed (rpm)
+                                                                                  500_rpm,        // shooter right flywheel speed (rpm
+                                                                                  2_s,            // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
 
@@ -260,10 +265,14 @@ void RobotContainer::ConfigureButtonBindings()
 
 #ifdef USE_ARM
    /* Set the "POV" D-pad up button to command the arm to move up.       */
-   frc2::POVButton(&m_driverController, 0).WhileTrue(m_arm.ArmUpCommmand());
+   frc2::POVButton(&m_operatorController, 0).WhileTrue(m_arm.ArmUpCommmand());
+   frc2::POVButton(&m_operatorController, 45).WhileTrue(m_arm.ArmUpCommmand());
+   frc2::POVButton(&m_operatorController, 315).WhileTrue(m_arm.ArmUpCommmand());
 
    /* Set the "POV" D-pad down button to command the arm to move down.   */
-   frc2::POVButton(&m_driverController, 180).WhileTrue(m_arm.ArmDownCommand());
+   frc2::POVButton(&m_operatorController, 180).WhileTrue(m_arm.ArmDownCommand());
+   frc2::POVButton(&m_operatorController, 135).WhileTrue(m_arm.ArmDownCommand());
+   frc2::POVButton(&m_operatorController, 225).WhileTrue(m_arm.ArmDownCommand());
 #endif
 }
 
@@ -286,42 +295,49 @@ void RobotContainer::PumpShuffleBoard(void)
    double tempValue;
    double leftTriggerValue;
 
-   /* Get the current state of the trigger based speed control switch.   */
-   if(m_triggerBasedSpeedControlEntryPtr->GetBoolean(false))
+   /* Check to see if the drive speed governor is currently active.     */
+   if(!m_driveGovernorActive)
    {
-      /* The trigger based speed control switch indicates we need to use*/
-      /* the triggers for speed control.                                */
+      /* The drive speed governor is not currently active.              */
 
-      /* Get the current left trigger axis value.                       */
-      leftTriggerValue = m_driverController.GetLeftTriggerAxis();
+      /* Get the current state of the trigger based speed control       */
+      /* switch.                                                        */
+      if(m_triggerBasedSpeedControlEntryPtr->GetBoolean(false))
+      {
+         /* The trigger based speed control switch indicates we need to */
+         /* use the triggers for speed control.                         */
 
-      /* Take the default maximum speed and subtract off a minimum speed*/
-      /* and multiply this by the left trigger value (acts as a         */
-      /* percentage).                                                   */
-      tempValue = 1.0 /*mps*/ + ((1.0 - leftTriggerValue) * (kDefaultMaxSpeed - 1_mps).value());
+         /* Get the current left trigger axis value.                    */
+         leftTriggerValue = m_driverController.GetLeftTriggerAxis();
 
-      /* Set the max speed to drive and update the widget on the shuffle */
-      /* board with this value.                                          */
-      m_drive.SetMaxSpeed(units::meters_per_second_t{tempValue});
-      m_maxSpeedEntryPtr->SetDouble(tempValue);
+         /* Take the default maximum speed and subtract off a minimum   */
+         /* speed and multiply this by the left trigger value (acts as a*/
+         /* percentage).                                                */
+         tempValue = 1.0 /*mps*/ + ((1.0 - leftTriggerValue) * (kDefaultMaxSpeed - 1_mps).value());
 
-      /* Take the default maximum angular speed and subtract off a      */
-      /* minimum angular speed and multiply this by the left trigger    */
-      /* value (acts as a percentage).                                  */
-      tempValue = units::radians_per_second_t{45_deg_per_s}.value() + (1.0 - leftTriggerValue) * (kDefaultMaxAngularSpeed - units::radians_per_second_t{45_deg_per_s}).value();
+         /* Set the max speed to drive and update the widget on the     */
+         /* shuffle board with this value.                              */
+         m_drive.SetMaxSpeed(units::meters_per_second_t{tempValue});
+         m_maxSpeedEntryPtr->SetDouble(tempValue);
 
-      /* Set the max speed to drive and update the widget on the shuffle */
-      /* board with this value.                                          */
-      m_drive.SetMaxAngularSpeed(units::radians_per_second_t{tempValue});
-      m_maxAngularSpeedEntryPtr->SetDouble(units::degrees_per_second_t(units::radians_per_second_t{tempValue}).value());
-   }
-   else
-   {
-      /* The trigger based speed control switch indicates we need to use */
-      /* the number sliders for speed control.   Set the speeds based on */
-      /* current number slider values.                                   */
-      m_drive.SetMaxSpeed(units::meters_per_second_t{m_maxSpeedEntryPtr->GetDouble(kDefaultMaxSpeed.value())});
-      m_drive.SetMaxAngularSpeed(units::radians_per_second_t{units::degrees_per_second_t(m_maxAngularSpeedEntryPtr->GetDouble(kDefaultMaxAngularSpeed.value()))});
+         /* Take the default maximum angular speed and subtract off a   */
+         /* minimum angular speed and multiply this by the left trigger */
+         /* value (acts as a percentage).                               */
+         tempValue = units::radians_per_second_t{45_deg_per_s}.value() + (1.0 - leftTriggerValue) * (kDefaultMaxAngularSpeed - units::radians_per_second_t{45_deg_per_s}).value();
+
+         /* Set the max speed to drive and update the widget on the     */
+         /* shuffle board with this value.                              */
+         m_drive.SetMaxAngularSpeed(units::radians_per_second_t{tempValue});
+         m_maxAngularSpeedEntryPtr->SetDouble(units::degrees_per_second_t(units::radians_per_second_t{tempValue}).value());
+      }
+      else
+      {
+         /* The trigger based speed control switch indicates we need to */
+         /* use the number sliders for speed control.  Set the speeds   */
+         /* based on current number slider values.                      */
+         m_drive.SetMaxSpeed(units::meters_per_second_t{m_maxSpeedEntryPtr->GetDouble(kDefaultMaxSpeed.value())});
+         m_drive.SetMaxAngularSpeed(units::radians_per_second_t{units::degrees_per_second_t(m_maxAngularSpeedEntryPtr->GetDouble(kDefaultMaxAngularSpeed.value()))});
+      }
    }
 
    /* Update the field relative state and the limit slew rate state     */
@@ -415,7 +431,7 @@ void RobotContainer::PumpShuffleBoard(void)
       {
          /* The new setpoint is different the previously stored last    */
          /* setpoint value.  Move to this angle as the new goal.        */
-         m_arm.SetGoal(units::radian_t{units::degree_t{tempValue}});
+         m_arm.SetArmPosition(units::degree_t{tempValue});
 
          /* Save the new set point value to the last dashboard setpoint */
          /* value.                                                      */
@@ -435,7 +451,7 @@ void RobotContainer::PumpShuffleBoard(void)
          /* The last state of the arm control was true and is now false.*/
          /* In this case make sure the arm stops and stays at the       */
          /* current location.                                           */
-         m_arm.SetGoal(units::radian_t{m_arm.GetArmAngle()});
+         m_arm.SetArmPosition(m_arm.GetArmAngle());
 
          /* Invalidate the last dashboard setpoint that was stored.     */
          m_armLastDashboardSetPoint = std::numeric_limits<double>::quiet_NaN();
@@ -481,13 +497,92 @@ void RobotContainer::PumpRumble(void)
    /* Check to see if there is currently a NOTE in the intake.          */
    if(m_intake.IsNoteDetected())
    {
-      /* There is currently a NOTE in the intake.  Enable rumble.       */
-      m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.20);
+      /* There is currently a NOTE in the intake.                       */
+
+      /* Adjust the rumble duty cycle count.                            */
+      m_rumbleDutyCycleCount - m_rumbleDutyCycleCount - 0.02_s;
+
+      /* Check to see if the rumble duty cycle counter has expired.     */
+      if(m_rumbleDutyCycleCount <= 0_s)
+      {
+         /* The rumble duty cycle counter has expired.  Check to see if */
+         /* rumble is currently active.                                 */
+         if(m_rumbleState)
+         {
+            /* Rumble is currently active.  Stop rumbling.              */
+            m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.0);
+
+            /* Reset the rumble duty cycle counter using the rumble off */
+            /* time.                                                    */
+            m_rumbleDutyCycleCount = OIConstants::kDriverRumbleOffTime;
+
+            /* Set the rumble state to indicate that the rumble is no   */
+            /* longer active.                                           */
+            m_rumbleState = false;
+         }
+         else
+         {
+            /* Rumble is not currently active.  Start rumbling.         */
+            m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, OIConstants::kDriverRumble);
+
+            /* Reset the rumble duty cycle counter using the rumble on  */
+            /* time.                                                    */
+            m_rumbleDutyCycleCount = OIConstants::kDriverRumbleOnTime;
+
+            /* Set the rumble state to indicate that the rumble is      */
+            /* currently active.                                        */
+            m_rumbleState = true;
+         }
+      }
    }
    else
    {
       /* There is not currently a NOTE in the intake.  Disable rumble.  */
       m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.0);
+
+      /* Reset the rumble duty cycle counter.                           */
+      m_rumbleDutyCycleCount = 0_s;
+   }
+}
+
+  /* The following function is responsible for pumping the drive speed  */
+  /* governor.  The goal of this function is to watch the current angle */
+  /* of the arm and if it is not currently in the down position to      */
+  /* automatically slow the maximum speed allowable for driving.        */
+void RobotContainer::PumpDriveGovernor(void)
+{
+   /* Check to see if the drive speed governor is currently enabled.    */
+   if(m_driveSpeedGovernorEntryPtr->GetBoolean(false))
+   {
+      /* The drive speed governor is currently enabled.                 */
+
+      /* Get the current angle of the arm and see if it is over the     */
+      /* minimum angle to activate the drive governor.                  */
+      if(m_arm.GetArmAngle() > kDriveGovernorArmActiveAngle)
+      {
+         /* The arm angle is greater that the amount to activate the    */
+         /* drive speed governor.                                       */
+
+         /* Set the maximum speed for driving to being the safe speed   */
+         /* for when the arm is up.                                     */
+         m_drive.SetMaxSpeed(kDriveGovernorMaxSpeed);
+         m_maxSpeedEntryPtr->SetDouble(kDriveGovernorMaxSpeed.value());
+         m_drive.SetMaxAngularSpeed(kDriveGovernorMaxAngularSpeed);
+         m_maxAngularSpeedEntryPtr->SetDouble(kDriveGovernorMaxAngularSpeed.value());
+
+         /* Set the flag indicating that the drive speed governor is    */
+         /* currently active.                                           */
+         m_driveGovernorActive = true;
+      }
+      else
+      {
+         /* The arm is under the minimum angle for the drive governor to*/
+         /* be active.                                                  */
+
+         /* Set the drive governor active boolean to indicate it is not */
+         /* active.                                                     */
+         m_driveGovernorActive = false;
+      }
    }
 }
 
@@ -499,7 +594,7 @@ void RobotContainer::ResetArmToCurrentPosition(void)
 {
    /* Simply get the arms current position and set its goal position to */
    /* be that position.                                                 */
-   m_arm.SetGoal(units::radian_t{m_arm.GetArmAngle()});
+   m_arm.SetArmPosition(m_arm.GetArmAngle());
 }
 
   /* Static command factory used to retrieve autonoumous paths from the  */

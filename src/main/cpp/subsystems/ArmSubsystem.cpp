@@ -48,15 +48,18 @@ ArmSubsystem::ArmSubsystem()
    /* Invert the output of the absolute encoder.                        */
    m_armAbsoluteEncoder.SetInverted(true);
 
-//xxx consider using SetSoftLimit to set end points...
-//xxx looks like you call SetSoftLimit and also EnableSoftLimit  (matches scaling units set by user. default is rotations,
-//xxx should be in radians since we set the position conversion factor above...
-#if 0
+   /* Change the average depth of the encoder to be less than the       */
+   /* default.  If you see alot of noise on the encoder consider        */
+   /* increasing this.                                                  */
+   m_armAbsoluteEncoder.SetAverageDepth(16);
+
    /* Set limits in the spark max for the controller to not move past  */
    /* the maximum angles of motion.                                    */
-   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, units::radian_t{kArmMaximumAngle}.value());
    m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, units::radian_t{kArmMinimumAngle}.value());
-#endif
+   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, units::radian_t{kArmMaximumAngle}.value());
+
+   m_leaderSparkMax.EnableSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, true);
+   m_leaderSparkMax.EnableSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, true);
 
    // Enable PID wrap around for the turning motor. This will allow the PID
    // controller to go through 0 to get to the setpoint i.e. going from 350
@@ -150,7 +153,7 @@ void ArmSubsystem::UseState(frc::TrapezoidProfile<units::radians>::State setpoin
    /* value.                                                            */
    m_leaderPIDController.SetReference(setpoint.position.value(), rev::CANSparkMax::ControlType::kPosition, 0/*PID Slot*/, feedforward.value(), rev::SparkMaxPIDController::ArbFFUnits::kVoltage);
 
-//xxx test code...
+   /* Get the actual voltage being applied to the motor.                */
    m_armAppliedOutputPublisher.Set(m_leaderSparkMax.GetAppliedOutput()*12);
 }
 
@@ -172,6 +175,17 @@ units::degree_t ArmSubsystem::GetArmAngle(void)
    return(units::degree_t(ret_val));
 }
 
+   /* Set the arm to the specified position.                            */
+void ArmSubsystem::SetArmPosition(units::degree_t setpoint)
+{
+   /* Enable the Arm for movement.                                      */
+   this->Enable();
+
+   /* Set the goal for moving the arm subsystem to be maximum angle     */
+   /* supported by the arm.                                             */
+   this->SetGoal(units::radian_t{setpoint});
+}
+
    /* Generates a command to set the arm position.                      */
 frc2::CommandPtr ArmSubsystem::SetArmPositionCommand(units::degree_t setpoint)
 {
@@ -179,7 +193,7 @@ frc2::CommandPtr ArmSubsystem::SetArmPositionCommand(units::degree_t setpoint)
    setpoint = std::clamp(setpoint, kArmMinimumAngle, kArmMaximumAngle);
 
    /* Create a command to run the arm to the specified setpoint.        */
-   return(frc2::cmd::RunOnce([this, setpoint] { this->SetGoal(units::radian_t{setpoint}); }, {this}));
+   return(frc2::cmd::RunOnce([this, setpoint] { this->SetArmPosition(setpoint); }, {this}));
 }
 
    /* Generates a command to move the arm up.                           */
@@ -191,10 +205,9 @@ frc2::CommandPtr ArmSubsystem::ArmUpCommmand(void)
    /* Uses reaching the maximum up angle to stop the command.           */
    frc2::CommandPtr ret_val = frc2::FunctionalCommand(
                                                       [this] {
-
-                                                               /* Set the goal for moving the arm subsystem to be maximum angle     */
-                                                               /* supported by the arm.                                             */
-                                                               this->SetGoal(units::radian_t{kArmMaximumAngle});
+                                                               /* Set the position for moving the arm subsystem to be maximum angle supported by     */
+                                                               /* the arm.                                                                           */
+                                                               this->SetArmPosition(kArmMaximumAngle);
                                                              },
                                                       [] {},
                                                       [this](bool interrupted){
@@ -233,9 +246,9 @@ frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
    /* Uses reaching the maximum up angle to stop the command.           */
    frc2::CommandPtr ret_val = frc2::FunctionalCommand(
                                                       [this] {
-                                                               /* Set the goal for moving the arm subsystem to be minimum angle     */
-                                                               /* supported by the arm.                                             */
-                                                               this->SetGoal(units::radian_t{kArmMinimumAngle});
+                                                               /* Set the position for moving the arm subsystem to be minimum angle     */
+                                                               /* supported by the arm.                                                 */
+                                                               this->SetArmPosition(kArmMinimumAngle);
                                                              },
                                                       [] {},
                                                       [this](bool interrupted){
@@ -248,10 +261,17 @@ frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
                                                                                    /* its motion.                                                    */
                                                                                    this->SetGoal(units::radian_t{this->GetArmAngle()});
                                                                                 }
+                                                                                else
+                                                                                {
+                                                                                   /* The reason this command ended was because we have reached the  */
+                                                                                   /* down position.  In this case disable the arm movement so it    */
+                                                                                   /* relaxes to the lowest possible state.                           */
+                                                                                   this->Disable();
+                                                                                }
                                                                               },
                                                       [this]{
                                                                /* Now check to see if we are at the minimum angle.                  */
-                                                               if(this->GetArmAngle() <= 2.5_deg)
+                                                               if(this->GetArmAngle() <= 3.5_deg)
                                                                   return(true);
                                                                else
                                                                   return(false);

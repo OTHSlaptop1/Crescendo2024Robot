@@ -44,6 +44,9 @@ void Robot::RobotPeriodic()
    /* control the controller rumble function.                           */
    m_container.PumpRumble();
 
+   /* Pump the drive speed governor.                                    */
+   m_container.PumpDriveGovernor();
+
    /* Run the command scheduler.                                        */
    frc2::CommandScheduler::GetInstance().Run();
 }

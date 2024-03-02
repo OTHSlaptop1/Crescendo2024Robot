@@ -33,6 +33,12 @@ namespace DriveConstants {
 constexpr units::meters_per_second_t kDefaultMaxSpeed = 4.8_mps;
 constexpr units::radians_per_second_t kDefaultMaxAngularSpeed{2 * std::numbers::pi};
 
+// The following constant defines the arm angle in which the
+// drive speed govenor becomes active.
+constexpr units::degree_t             kDriveGovernorArmActiveAngle = 20_deg;
+constexpr units::meters_per_second_t  kDriveGovernorMaxSpeed       = 1.25_mps;
+constexpr units::radians_per_second_t kDriveGovernorMaxAngularSpeed{45_deg_per_s};
+
 constexpr double kDirectionSlewRate  = 1.2;   // radians per second
 constexpr double kMagnitudeSlewRate  = 1.8;   // percent per second (1 = 100%)
 constexpr double kRotationalSlewRate = 2.0;   // percent per second (1 = 100%)
@@ -113,7 +119,7 @@ constexpr double kTurningMaxOutput = 1;
 constexpr rev::CANSparkMax::IdleMode kDrivingMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 constexpr rev::CANSparkMax::IdleMode kTurningMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 
-constexpr units::ampere_t kDrivingMotorCurrentLimit = 50_A;
+constexpr units::ampere_t kDrivingMotorCurrentLimit = 60_A;
 constexpr units::ampere_t kTurningMotorCurrentLimit = 40_A;
 }  // namespace ModuleConstants
 
@@ -174,7 +180,7 @@ constexpr units::revolutions_per_minute_t kShooterMinimumSpeed = -6250_rpm;
 constexpr units::revolutions_per_minute_t kShooterMaximumSpeed = 6250_rpm;   // Falcon 500 free speed is 6380 RPM so less than that is good.
 
 // Shooter motors current limits.
-constexpr double kShooterMotorCurrentLimit = 40.0;
+constexpr double kShooterMotorCurrentLimit = 50.0;
 
 // Shooter left motor PID constants.
 constexpr double kShooterLeftP = 0.12884;
@@ -182,8 +188,8 @@ constexpr double kShooterLeftI = 0;
 constexpr double kShooterLeftD = 0;
 
 // Shooter left Simple Motor Feedforward constants.  These were captured using SysId
-constexpr units::volt_t kShooterLeftkS = 0.021881_V;
-constexpr auto kShooterLeftkV          = (0.12500_V * 1_s)/ 1_tr;
+constexpr units::volt_t kShooterLeftkS = 0.0205_V;
+constexpr auto kShooterLeftkV          = (0.12000_V * 1_s)/ 1_tr;
 constexpr auto kShooterLeftkA          = (0.037387_V * 1_s * 1_s)/ 1_tr;
 
 // Shooter right motor PID constants.
@@ -192,8 +198,8 @@ constexpr double kShooterRightI = 0;
 constexpr double kShooterRightD = 0;
 
 // Shooter right Simple Motor Feedforward constants.  These were captured using SysId
-constexpr units::volt_t  kShooterRightkS = 0.021881_V;
-constexpr auto kShooterRightkV           = (0.12500_V * 1_s)/ 1_tr;
+constexpr units::volt_t  kShooterRightkS = 0.0205_V;
+constexpr auto kShooterRightkV           = (0.12000_V * 1_s)/ 1_tr;
 constexpr auto kShooterRightkA           = (0.037387_V * 1_s * 1_s)/ 1_tr;
 
 } // namespace ShooterConstants
@@ -238,23 +244,23 @@ namespace ArmConstants {
    constexpr double kArmEncoderPositionFactor = (2 * std::numbers::pi);  // radians
    constexpr double kArmEncoderVelocityFactor =  (2 * std::numbers::pi) / 60.0;  // radians per second
 
-   constexpr units::degree_t kArmMinimumAngle = 2.5_deg;
-   constexpr units::degree_t kArmMaximumAngle = 99_deg;
+   constexpr units::degree_t kArmMinimumAngle = 0.0_deg;
+   constexpr units::degree_t kArmMaximumAngle = 96.5_deg;
    constexpr units::degree_t kArmFeedforwardOffsetAngle = 13.5_deg;
 
    constexpr units::radian_t kArmEncoderPositionPIDMinInput = 0_rad;
    constexpr units::radian_t kArmEncoderPositionPIDMaxInput = units::radian_t{kArmEncoderPositionFactor};
 
    /* Arm PID constants.            */
-   constexpr double kArmP  = 0.785;
-   constexpr double kArmI  = 0.0;
-   constexpr double kArmD  = 0.180;//0.155;
-   constexpr double kArmFF = 0.0;
-   constexpr double kArmMinOutput = -1;
-   constexpr double kArmMaxOutput = 1;
+   constexpr double kArmP  = 0.45;                                 // 100:1 0.785
+   constexpr double kArmI  = 0.0;                                  // 100:1 0.0
+   constexpr double kArmD  = 0.145;                                // 100:1 0.180
+   constexpr double kArmFF = 0.0;                                  // 100:1 0.0
+   constexpr double kArmMinOutput = -1;                            // 100:1 -1
+   constexpr double kArmMaxOutput = 1;                             // 100:1  1
 
-   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{90_deg_per_s};  // 65
-   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{90_deg_per_s_sq};
+   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{90_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
+   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{45_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
 
    constexpr int kArmLeaderCanId  = 13;
    constexpr int kArmFollwerCanId = 15;
@@ -265,10 +271,10 @@ namespace ArmConstants {
    constexpr units::ampere_t kFollowerMotorCurrentLimit = 60_A;
 
 //xxx need to figure out these values???  maybe start with initial values form recalc...
-   constexpr units::volt_t kS = 0.100_V;
-   constexpr units::volt_t kG = 0.785_V;
-   constexpr auto kV = 1.30_V * 1_s / 1_rad;
-   constexpr auto kA = 0.05_V * 1_s * 1_s / 1_rad;
+   constexpr units::volt_t kS = 0.050_V;                       // 100:1 - 0.10
+   constexpr units::volt_t kG = 0.4290_V;                     // 100:1 - 0.785
+   constexpr auto kV = 3.25_V * 1_s / 1_rad;                    // 100:1 - 1.30
+   constexpr auto kA = 0.035_V * 1_s * 1_s / 1_rad;            // 100:1 - 0.05
 
 } // namespace ArmContrants
 
@@ -288,4 +294,11 @@ namespace OIConstants
 {
    constexpr int kDriverControllerPort = 0;
    constexpr double kDriveDeadband = 0.1;
+
+   constexpr double kDriverRumble = 0.2;
+   constexpr units::second_t kDriverRumbleOnTime  = 0.5_s;
+   constexpr units::second_t kDriverRumbleOffTime = 1.5_s;
+
+   constexpr int kOperatorControllerPort = 1;
+
 }  // namespace OIConstants

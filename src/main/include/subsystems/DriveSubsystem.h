@@ -6,6 +6,7 @@
 
 #include <networktables/StructArrayTopic.h>
 #include <networktables/StructTopic.h>
+#include <networktables/DoubleArrayTopic.h>
 
 #include <ctre/phoenix6/Pigeon2.hpp>
 
@@ -217,7 +218,9 @@ class DriveSubsystem : public frc2::SubsystemBase {
   bool m_limitSlewRate;
 
   // Publisher variables for a swerve module states.
-  nt::StructArrayPublisher<frc::SwerveModuleState> swerveMeasuredPublisher;
-  nt::StructArrayPublisher<frc::SwerveModuleState> swerveSetpointsPublisher;
-  nt::StructArrayPublisher<frc::SwerveModuleState> swerveSetPointsOptimizedPublisher;
+  nt::StructArrayPublisher<frc::SwerveModuleState> m_swerveMeasuredPublisher;
+  nt::StructArrayPublisher<frc::SwerveModuleState> m_swerveSetpointsPublisher;
+  nt::StructArrayPublisher<frc::SwerveModuleState> m_swerveSetPointsOptimizedPublisher;
+  nt::DoubleArrayPublisher                         m_swerveDriveCurrentPublisher;
+  nt::DoubleArrayPublisher                         m_swerveTurnCurrentPublisher;
 };

@@ -118,4 +118,6 @@ class ShooterSubsystem : public frc2::SubsystemBase {
     nt::DoublePublisher m_shooterRightSetpointPublisher;
     nt::DoublePublisher m_shooterLeftSupplyCurrentPublisher;
     nt::DoublePublisher m_shooterRightSupplyCurrentPublisher;
+    nt::DoublePublisher m_shooterLeftTemperaturePublisher;
+    nt::DoublePublisher m_shooterRightTemperaturePublisher;
 };

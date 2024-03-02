@@ -5,6 +5,7 @@
 #pragma once
 
 #include <frc2/command/button/CommandXboxController.h>
+#include <frc/GenericHID.h>
 
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
@@ -14,6 +15,7 @@
 #include <frc/apriltag/AprilTagFieldLayout.h>
 #include <frc/apriltag/AprilTagFields.h>
 #include <frc/smartdashboard/Field2d.h>
+#include <units/time.h>
 
 #include <functional>
 
@@ -64,6 +66,12 @@ class RobotContainer {
   /* loop.                                                              */
   void PumpRumble(void);
 
+  /* The following function is responsible for pumping the drive speed  */
+  /* governor.  The goal of this function is to watch the current angle */
+  /* of the arm and if it is not currently in the down position to      */
+  /* automatically slow the maximum speed allowable for driving.        */
+  void PumpDriveGovernor(void);
+
   /* The following function is to reset the arm to its current position.*/
   /* This should be done in each XXXInit phase of the robot to make up  */
   /* for a possible change in position that can occure when the motors  */
@@ -99,6 +107,14 @@ class RobotContainer {
   // The driver's controller
   frc2::CommandXboxController m_driverController{OIConstants::kDriverControllerPort};
 
+  // The operator's controller
+  frc::GenericHID m_operatorController{OIConstants::kOperatorControllerPort};
+
+  /* The following variable holds the variable use to control the rumble*/
+  /* duty cycle.                                                        */
+  units::second_t m_rumbleDutyCycleCount;
+  bool            m_rumbleState;
+
   // Shuffleboard Entries
   nt::GenericEntry *m_SetPoseXEntryPtr;
   nt::GenericEntry *m_SetPoseYEntryPtr;
@@ -109,10 +125,12 @@ class RobotContainer {
   nt::GenericEntry *m_maxSpeedEntryPtr;
   nt::GenericEntry *m_maxAngularSpeedEntryPtr;
   nt::GenericEntry *m_triggerBasedSpeedControlEntryPtr;
+  nt::GenericEntry *m_driveSpeedGovernorEntryPtr;
   nt::GenericEntry *m_fieldRelativeStateEntryPtr;
   nt::GenericEntry *m_limitSlewRateEntryPtr;
 
   bool              m_resetGyroButton;
+  bool              m_driveGovernorActive;
 
   nt::GenericEntry *m_allowIntakeControlEntryPtr;
   nt::GenericEntry *m_intakeSpeedEntryPtr;
