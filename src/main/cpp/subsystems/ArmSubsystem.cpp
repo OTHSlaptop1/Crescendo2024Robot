@@ -51,7 +51,7 @@ ArmSubsystem::ArmSubsystem()
    /* Change the average depth of the encoder to be less than the       */
    /* default.  If you see alot of noise on the encoder consider        */
    /* increasing this.                                                  */
-   m_armAbsoluteEncoder.SetAverageDepth(16);
+   m_armAbsoluteEncoder.SetAverageDepth(32);
 
    /* Set limits in the spark max for the controller to not move past  */
    /* the maximum angles of motion.                                    */

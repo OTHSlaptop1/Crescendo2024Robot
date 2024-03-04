@@ -40,10 +40,6 @@ void Robot::RobotPeriodic()
    /* the updated state.                                                */
    m_container.PumpShuffleBoard();
 
-   /* Pump the periodic polling in the Robot Container that is used to  */
-   /* control the controller rumble function.                           */
-   m_container.PumpRumble();
-
    /* Pump the drive speed governor.                                    */
    m_container.PumpDriveGovernor();
 
@@ -111,7 +107,12 @@ void Robot::TeleopInit()
 /**
  * This function is called periodically during operator control.
  */
-void Robot::TeleopPeriodic() {}
+void Robot::TeleopPeriodic() 
+{
+   /* Pump the periodic polling in the Robot Container that is used to  */
+   /* control the controller rumble function.                           */
+   m_container.PumpRumble();
+}
 
 /**
  * This function is called periodically during test mode.

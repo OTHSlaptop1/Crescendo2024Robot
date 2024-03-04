@@ -44,7 +44,8 @@ RobotContainer::RobotContainer() {
 
 #ifdef USE_INTAKE
   /* Register the named commands that will be used by path planner.     */
-  pathplanner::NamedCommands::registerCommand("Intake_GrabNote", std::move(m_intake.GrabNoteCommand(4500_rpm)));
+  pathplanner::NamedCommands::registerCommand("IntakeGrabNote", std::move(m_intake.GrabNoteCommand(4500_rpm)));
+
 
 #ifdef USE_SHOOTER
   pathplanner::NamedCommands::registerCommand("ShootNoteFromIntake", std::move(ShootNoteFromIntakeCommand(
@@ -57,6 +58,14 @@ RobotContainer::RobotContainer() {
                                                                                                            0.750_s         // after intake enabled time till complete
                                                                                                           ).ToPtr()));
 #endif
+#endif
+
+#ifdef USE_ARM
+  /* Register the named commands that will be used by path planner.     */
+  pathplanner::NamedCommands::registerCommand("ArmUp", std::move(m_arm.ArmUpCommmand()));
+
+  /* Register the named commands that will be used by path planner.     */
+  pathplanner::NamedCommands::registerCommand("ArmDown", std::move(m_arm.ArmDownCommand()));
 #endif
 
   /* Initialize the internal variables to a known initial state.        */
@@ -97,7 +106,8 @@ RobotContainer::RobotContainer() {
 
   // Add Path Planner autos into the autonomous command chooser
   m_chooser.SetDefaultOption("Example Auto", std::bind(RobotContainer::PathPlannerCommandFactory, "New Auto"));
-  m_chooser.AddOption("Complex Auto", std::bind(RobotContainer::PathPlannerCommandFactory, "New New Auto"));
+  m_chooser.AddOption("Speaker", std::bind(RobotContainer::PathPlannerCommandFactory, "testauto"));
+  m_chooser.AddOption("Speakertop", std::bind(RobotContainer::PathPlannerCommandFactory, "BlueSpeakerTop"));
 
   // Put the chooser on the dashboard
   frc::Shuffleboard::GetTab("Autonomous").Add("Select Autonomous Path", m_chooser).WithSize(3, 2).WithPosition(0, 0);
@@ -323,7 +333,7 @@ void RobotContainer::PumpShuffleBoard(void)
          /* Take the default maximum angular speed and subtract off a   */
          /* minimum angular speed and multiply this by the left trigger */
          /* value (acts as a percentage).                               */
-         tempValue = units::radians_per_second_t{45_deg_per_s}.value() + (1.0 - leftTriggerValue) * (kDefaultMaxAngularSpeed - units::radians_per_second_t{45_deg_per_s}).value();
+         tempValue = units::radians_per_second_t{180_deg_per_s}.value() + (1.0 - leftTriggerValue) * (kDefaultMaxAngularSpeed - units::radians_per_second_t{45_deg_per_s}).value();
 
          /* Set the max speed to drive and update the widget on the     */
          /* shuffle board with this value.                              */
@@ -500,7 +510,7 @@ void RobotContainer::PumpRumble(void)
       /* There is currently a NOTE in the intake.                       */
 
       /* Adjust the rumble duty cycle count.                            */
-      m_rumbleDutyCycleCount - m_rumbleDutyCycleCount - 0.02_s;
+      m_rumbleDutyCycleCount = m_rumbleDutyCycleCount - 0.02_s;
 
       /* Check to see if the rumble duty cycle counter has expired.     */
       if(m_rumbleDutyCycleCount <= 0_s)
@@ -542,6 +552,8 @@ void RobotContainer::PumpRumble(void)
 
       /* Reset the rumble duty cycle counter.                           */
       m_rumbleDutyCycleCount = 0_s;
+
+      m_rumbleState = false;
    }
 }
 
@@ -555,7 +567,7 @@ void RobotContainer::PumpDriveGovernor(void)
    if(m_driveSpeedGovernorEntryPtr->GetBoolean(false))
    {
       /* The drive speed governor is currently enabled.                 */
-
+#ifdef USE_ARM
       /* Get the current angle of the arm and see if it is over the     */
       /* minimum angle to activate the drive governor.                  */
       if(m_arm.GetArmAngle() > kDriveGovernorArmActiveAngle)
@@ -583,6 +595,7 @@ void RobotContainer::PumpDriveGovernor(void)
          /* active.                                                     */
          m_driveGovernorActive = false;
       }
+#endif      
    }
 }
 
@@ -592,9 +605,11 @@ void RobotContainer::PumpDriveGovernor(void)
   /* are unpowered during current disabled phases.                      */
 void RobotContainer::ResetArmToCurrentPosition(void)
 {
+#ifdef USE_ARM   
    /* Simply get the arms current position and set its goal position to */
    /* be that position.                                                 */
    m_arm.SetArmPosition(m_arm.GetArmAngle());
+#endif   
 }
 
   /* Static command factory used to retrieve autonoumous paths from the  */

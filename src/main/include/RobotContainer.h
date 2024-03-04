@@ -39,7 +39,7 @@
 
 #define USE_INTAKE
 #define USE_SHOOTER
-#define USE_ARM
+//#define USE_ARM
 //#define USE_VISION
 
 /**

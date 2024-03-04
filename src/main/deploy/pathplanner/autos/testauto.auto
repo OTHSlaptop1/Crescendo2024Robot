@@ -1,0 +1,87 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.2505003900884375,
+      "y": 5.551187918118234
+    },
+    "rotation": 0
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Speakerstart"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Notetospeaker"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "speaker to top note"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "top note to speaker"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": false
+}
