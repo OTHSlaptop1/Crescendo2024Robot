@@ -6,6 +6,9 @@
 
 #include <frc2/command/button/CommandXboxController.h>
 #include <frc/GenericHID.h>
+#include <frc/PowerDistribution.h>
+
+#include <networktables/DoubleTopic.h>
 
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
@@ -28,7 +31,7 @@
 #include "subsystems/VisionSubsystem.h"
 #include "subsystems/IntakeSubsystem.h"
 #include "subsystems/ShooterSubsystem.h"
-#include "subsystems/ArmSubsystem.h"
+#include "subsystems/Arm2Subsystem.h"
 
 #include "utils/SwerveSendable.h"
 
@@ -37,9 +40,10 @@
 #define RED_AMP_TAG_ID                                               (5)
 #define BLUE_AMP_TAG_ID                                              (6)
 
+//#define USE_OPERATOR_CONTROLLER
 #define USE_INTAKE
 #define USE_SHOOTER
-//#define USE_ARM
+#define USE_ARM
 //#define USE_VISION
 
 /**
@@ -55,10 +59,17 @@ class RobotContainer {
 
   frc2::CommandPtr GetAutonomousCommand();
 
+  /* The following function is responsible for logging the power        */
+  /* distribution.                                                      */
+  void LogPowerDistribution(void);
+
   /* The following function is responsible for pumping the shuffle board*/
   /* items to keep them update date.  This should be called during a    */
   /* robots periodic loop.                                              */
   void PumpShuffleBoard(void);
+
+  /* The following function is responsible for disabling rumble.        */
+  void DisableRumble(void);
 
   /* The following function is responsible for pumping the logic used to*/
   /* detect events that will enable and disable the rumble function of  */
@@ -71,12 +82,6 @@ class RobotContainer {
   /* of the arm and if it is not currently in the down position to      */
   /* automatically slow the maximum speed allowable for driving.        */
   void PumpDriveGovernor(void);
-
-  /* The following function is to reset the arm to its current position.*/
-  /* This should be done in each XXXInit phase of the robot to make up  */
-  /* for a possible change in position that can occure when the motors  */
-  /* are unpowered during current disabled phases.                      */
-  void ResetArmToCurrentPosition(void);
 
  private:
 
@@ -97,7 +102,7 @@ class RobotContainer {
   VisionSubsystem   m_vision{"photonvision_0", frc::Transform3d{0_m, 0_m, 0_m, frc::Rotation3d{units::radian_t{0_deg}, units::radian_t{0_deg}, units::radian_t{0_deg}}}, m_odometry.GetAprilTagFieldLayout()};    // vision subsystem
 #endif
 #ifdef USE_ARM
-  ArmSubsystem m_arm;                          // arm subsystem
+  Arm2Subsystem m_arm;                          // arm subsystem
 #endif
 
   // Static private function which acts as a command factory for getting
@@ -107,8 +112,20 @@ class RobotContainer {
   // The driver's controller
   frc2::CommandXboxController m_driverController{OIConstants::kDriverControllerPort};
 
+#ifdef USE_OPERATOR_CONTROLLER
   // The operator's controller
   frc::GenericHID m_operatorController{OIConstants::kOperatorControllerPort};
+#endif
+
+  /* The following variable holds the power distribution panel object. */
+  frc::PowerDistribution m_PDP{25, frc::PowerDistribution::ModuleType::kRev};
+
+   // Publisher variables for the power distribution.
+   nt::DoublePublisher m_pdpVoltagePublisher;
+   nt::DoublePublisher m_pdpTemperaturePublisher;
+   nt::DoublePublisher m_pdpCurrentPublisher;
+   nt::DoublePublisher m_pdpPowerPublisher;
+   nt::DoublePublisher m_pdpEnergyPublisher;
 
   /* The following variable holds the variable use to control the rumble*/
   /* duty cycle.                                                        */
@@ -146,6 +163,7 @@ class RobotContainer {
   nt::GenericEntry *m_allowArmControlEntryPtr;
   nt::GenericEntry *m_armPositionEntryPtr;
 
+  bool              m_disableArmButton;
   bool              m_lastAllowArmControlState;
   double            m_armLastDashboardSetPoint;
 
@@ -169,7 +187,7 @@ class RobotContainer {
 #endif
 
 #ifdef USE_ARM
-  frc2::CommandPtr m_armUp          = m_arm.ArmUpCommmand();
+  frc2::CommandPtr m_armUp          = m_arm.ArmUpCommand();
   frc2::CommandPtr m_armDown        = m_arm.ArmDownCommand();
 #endif
   /* Teleops Commands.                                                  */

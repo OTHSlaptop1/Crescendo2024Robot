@@ -30,7 +30,7 @@
 namespace DriveConstants {
 // Driving Parameters - Note that these are not the maximum capable speeds of
 // the robot, rather the allowed maximum speeds
-constexpr units::meters_per_second_t kDefaultMaxSpeed = 4.0_mps;
+constexpr units::meters_per_second_t kDefaultMaxSpeed = 4.3_mps;
 constexpr units::radians_per_second_t kDefaultMaxAngularSpeed{2 * std::numbers::pi};
 
 // The following constant defines the arm angle in which the
@@ -119,8 +119,8 @@ constexpr double kTurningMaxOutput = 1;
 constexpr rev::CANSparkMax::IdleMode kDrivingMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 constexpr rev::CANSparkMax::IdleMode kTurningMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 
-constexpr units::ampere_t kDrivingMotorCurrentLimit = 40_A;
-constexpr units::ampere_t kTurningMotorCurrentLimit = 25_A;
+constexpr units::ampere_t kDrivingMotorCurrentLimit = 45_A;
+constexpr units::ampere_t kTurningMotorCurrentLimit = 30_A;
 }  // namespace ModuleConstants
 
 namespace IntakeConstants {
@@ -180,7 +180,7 @@ constexpr units::revolutions_per_minute_t kShooterMinimumSpeed = -6250_rpm;
 constexpr units::revolutions_per_minute_t kShooterMaximumSpeed = 6250_rpm;   // Falcon 500 free speed is 6380 RPM so less than that is good.
 
 // Shooter motors current limits.
-constexpr double kShooterMotorCurrentLimit = 40.0;
+constexpr double kShooterMotorCurrentLimit = 45.0;
 
 // Shooter left motor PID constants.
 constexpr double kShooterLeftP = 0.12884;
@@ -244,7 +244,7 @@ namespace ArmConstants {
    constexpr double kArmEncoderPositionFactor = (2 * std::numbers::pi);  // radians
    constexpr double kArmEncoderVelocityFactor =  (2 * std::numbers::pi) / 60.0;  // radians per second
 
-   constexpr units::degree_t kArmMinimumAngle = -2.0_deg;
+   constexpr units::degree_t kArmMinimumAngle = -3.0_deg;
    constexpr units::degree_t kArmMaximumAngle = 96.5_deg;
    constexpr units::degree_t kArmFeedforwardOffsetAngle = 13.5_deg;
 
@@ -259,16 +259,19 @@ namespace ArmConstants {
    constexpr double kArmMinOutput = -1;                            // 100:1 -1
    constexpr double kArmMaxOutput = 1;                             // 100:1  1
 
-   constexpr units::radians_per_second_t kArmMaxVelocity             = units::radians_per_second_t{90_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
-   constexpr units::radians_per_second_squared_t kArmMaxAcceleration = units::radians_per_second_squared_t{45_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
+//xxx arm 2 subsystem
+   constexpr units::radians_per_second_t kArmUpMaxVelocity               = units::radians_per_second_t{90_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
+   constexpr units::radians_per_second_squared_t kArmUpMaxAcceleration   = units::radians_per_second_squared_t{120_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
+   constexpr units::radians_per_second_t kArmDownMaxVelocity             = units::radians_per_second_t{45_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
+   constexpr units::radians_per_second_squared_t kArmDownMaxAcceleration = units::radians_per_second_squared_t{45_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
 
    constexpr int kArmLeaderCanId  = 13;
    constexpr int kArmFollwerCanId = 15;
 
    constexpr rev::CANSparkMax::IdleMode kArmMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 
-   constexpr units::ampere_t kLeaderMotorCurrentLimit   = 60_A;
-   constexpr units::ampere_t kFollowerMotorCurrentLimit = 60_A;
+   constexpr units::ampere_t kLeaderMotorCurrentLimit   = 40_A;
+   constexpr units::ampere_t kFollowerMotorCurrentLimit = 40_A;
 
 //xxx need to figure out these values???  maybe start with initial values form recalc...
    constexpr units::volt_t kS = 0.050_V;                       // 100:1 - 0.10

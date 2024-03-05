@@ -46,7 +46,6 @@ RobotContainer::RobotContainer() {
   /* Register the named commands that will be used by path planner.     */
   pathplanner::NamedCommands::registerCommand("IntakeGrabNote", std::move(m_intake.GrabNoteCommand(4500_rpm)));
 
-
 #ifdef USE_SHOOTER
   pathplanner::NamedCommands::registerCommand("ShootNoteFromIntake", std::move(ShootNoteFromIntakeCommand(
                                                                                                            &m_intake,      // intake subsystem pointer
@@ -61,12 +60,19 @@ RobotContainer::RobotContainer() {
 #endif
 
 #ifdef USE_ARM
-  /* Register the named commands that will be used by path planner.     */
-  pathplanner::NamedCommands::registerCommand("ArmUp", std::move(m_arm.ArmUpCommmand()));
+  /* Register the Arm Up Command.                                            */
+  pathplanner::NamedCommands::registerCommand("ArmUp", std::move(m_arm.ArmUpCommand()));
 
-  /* Register the named commands that will be used by path planner.     */
+  /* Register the Arm Down Command.                                            */
   pathplanner::NamedCommands::registerCommand("ArmDown", std::move(m_arm.ArmDownCommand()));
 #endif
+
+  /* Initialze the power distribution panel logging.                          */
+  m_pdpVoltagePublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Voltage").Publish();
+  m_pdpTemperaturePublisher = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Temperature").Publish();
+  m_pdpCurrentPublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Current").Publish();
+  m_pdpPowerPublisher       = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Power").Publish();
+  m_pdpEnergyPublisher      = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Energy").Publish();
 
   /* Initialize the internal variables to a known initial state.        */
   m_rumbleDutyCycleCount         = 0_s;
@@ -80,6 +86,7 @@ RobotContainer::RobotContainer() {
   m_lastAllowShooterControlState = false;
   m_lastAllowArmControlState     = false;
 
+  m_disableArmButton             = false;
   m_armLastDashboardSetPoint     = std::numeric_limits<double>::quiet_NaN();
 
   // Initialize all of your commands and subsystems here
@@ -105,8 +112,7 @@ RobotContainer::RobotContainer() {
   frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Autonomous/Set Pose/Reset Odometry")).OnTrue(frc2::cmd::RunOnce([this] { m_odometry.ResetOdometry({units::meter_t(m_SetPoseXEntryPtr->GetDouble(0.0)), units::meter_t(m_SetPoseYEntryPtr->GetDouble(0.0)), m_drive.GetRotation2dHeading()}); m_resetOdometryButton = false; }, {&m_drive, &m_odometry}));
 
   // Add Path Planner autos into the autonomous command chooser
-  m_chooser.SetDefaultOption("Example Auto", std::bind(RobotContainer::PathPlannerCommandFactory, "New Auto"));
-  m_chooser.AddOption("Speaker", std::bind(RobotContainer::PathPlannerCommandFactory, "testauto"));
+  m_chooser.SetDefaultOption("Speaker", std::bind(RobotContainer::PathPlannerCommandFactory, "testauto"));
   m_chooser.AddOption("Speakertop", std::bind(RobotContainer::PathPlannerCommandFactory, "BlueSpeakerTop"));
 
   // Put the chooser on the dashboard
@@ -123,7 +129,7 @@ RobotContainer::RobotContainer() {
   /* ****************************************************************** */
 
   frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Blue Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(0, 0);
-  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Blue Commands").Add("Path To Amp", *(m_pathToBlueAmp.get())).WithPosition(0, 0);
+//  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Blue Commands").Add("Path To Amp", *(m_pathToBlueAmp.get())).WithPosition(0, 0);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").Add("Speaker Top", ).WithPosition(0, 1);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").Add("Speaker Mid", ).WithPosition(0, 2);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").Add("Speaker Bottom", ).WithPosition(0, 3);
@@ -135,7 +141,7 @@ RobotContainer::RobotContainer() {
   frc::Shuffleboard::GetTab("Teleoperated").Add("Field", m_field).WithProperties({{"robot_width", nt::Value::MakeDouble(kTrackWidth.value())}, {"robot_length", nt::Value::MakeDouble(kWheelBase.value())}}).WithSize(10, 5).WithPosition(2, 0);
 
   frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(12, 0);
-  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands").Add("Path To Amp", *(m_pathToRedAmp.get())).WithPosition(0, 0);
+//  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands").Add("Path To Amp", *(m_pathToRedAmp.get())).WithPosition(0, 0);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Red Commands").Add("Speaker Top", ).WithPosition(0, 1);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Red Commands").Add("Speaker Mid", ).WithPosition(0, 2);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Red Commands").Add("Speaker Bottom", ).WithPosition(0, 3);
@@ -205,6 +211,12 @@ RobotContainer::RobotContainer() {
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").AddDouble("Measured Angle", [this]{ return(m_arm.GetArmAngle().value()); }).WithWidget(frc::BuiltInWidgets::kNumberBar).WithProperties({{"min_value", nt::Value::MakeDouble(ArmConstants::kArmMinimumAngle.value())}, {"max_value", nt::Value::MakeDouble(ArmConstants::kArmMaximumAngle.value())}, {"divisions", nt::Value::MakeInteger(5)}}).WithPosition(0, 3);
   m_allowArmControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Allow Dashboard Control", false).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
   m_armPositionEntryPtr     = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").Add("Set Angle", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(ArmConstants::kArmMinimumAngle.value())}, {"max_value", nt::Value::MakeDouble(ArmConstants::kArmMaximumAngle.value())}}).WithPosition(0, 5).WithSize(2, 1).GetEntry();
+
+  /* Add a button to reset the arm encoder position using a triggered   */
+  /* network button command.  Note this clears the boolean after        */
+  /* running the function to reset the arm encoder position.            */
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Arm").AddBoolean("Disable Arm", [this]{ return(m_disableArmButton); }).WithWidget(frc::BuiltInWidgets::kToggleButton).WithProperties({{"Label position", nt::Value::MakeString("HIDDEN")}}).WithPosition(3, 1);
+  frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Subsystems/Arm/Disable Arm")).OnTrue(frc2::cmd::RunOnce([this] { m_arm.DisableArm(); m_disableArmButton = false; }, {&m_arm}));
 #endif
 
   /* Change the Tab to automatically start on the subsystems tab.       */
@@ -273,16 +285,18 @@ void RobotContainer::ConfigureButtonBindings()
 
 #endif
 
+#ifdef USE_OPERATOR_CONTROLLER
 #ifdef USE_ARM
    /* Set the "POV" D-pad up button to command the arm to move up.       */
-   frc2::POVButton(&m_operatorController, 0).WhileTrue(m_arm.ArmUpCommmand());
-   frc2::POVButton(&m_operatorController, 45).WhileTrue(m_arm.ArmUpCommmand());
-   frc2::POVButton(&m_operatorController, 315).WhileTrue(m_arm.ArmUpCommmand());
+   frc2::POVButton(&m_operatorController, 0).WhileTrue(m_arm.ArmUpCommand());
+   frc2::POVButton(&m_operatorController, 45).WhileTrue(m_arm.ArmUpCommand());
+   frc2::POVButton(&m_operatorController, 315).WhileTrue(m_arm.ArmUpCommand());
 
    /* Set the "POV" D-pad down button to command the arm to move down.   */
    frc2::POVButton(&m_operatorController, 180).WhileTrue(m_arm.ArmDownCommand());
    frc2::POVButton(&m_operatorController, 135).WhileTrue(m_arm.ArmDownCommand());
    frc2::POVButton(&m_operatorController, 225).WhileTrue(m_arm.ArmDownCommand());
+#endif
 #endif
 }
 
@@ -296,6 +310,18 @@ frc2::CommandPtr RobotContainer::GetAutonomousCommand()
 
    /* Get the selected command.                                         */
    return(commandFactory());
+}
+
+  /* The following function is responsible for logging the power        */
+  /* distribution.                                                      */
+void RobotContainer::LogPowerDistribution(void)
+{
+   /* Log the current state of the power distribution panel             */
+   m_pdpVoltagePublisher.Set(m_PDP.GetVoltage());
+   m_pdpTemperaturePublisher.Set(m_PDP.GetTemperature());
+   m_pdpCurrentPublisher.Set(m_PDP.GetTotalCurrent());
+   m_pdpPowerPublisher.Set(m_PDP.GetTotalPower());
+   m_pdpEnergyPublisher.Set(m_PDP.GetTotalEnergy());
 }
 
    /* The following function is responsible for pumping changes made in */
@@ -333,7 +359,7 @@ void RobotContainer::PumpShuffleBoard(void)
          /* Take the default maximum angular speed and subtract off a   */
          /* minimum angular speed and multiply this by the left trigger */
          /* value (acts as a percentage).                               */
-         tempValue = units::radians_per_second_t{180_deg_per_s}.value() + (1.0 - leftTriggerValue) * (kDefaultMaxAngularSpeed - units::radians_per_second_t{45_deg_per_s}).value();
+         tempValue = units::radians_per_second_t{120_deg_per_s}.value() + (1.0 - leftTriggerValue) * (kDefaultMaxAngularSpeed - units::radians_per_second_t{45_deg_per_s}).value();
 
          /* Set the max speed to drive and update the widget on the     */
          /* shuffle board with this value.                              */
@@ -498,6 +524,13 @@ void RobotContainer::PumpShuffleBoard(void)
 #endif
 }
 
+   /* The following function is responsible for disabling rumble.       */
+void RobotContainer::DisableRumble(void)
+{
+   /* Stop rumbling.                                                     */
+   m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.0);
+}
+
   /* The following function is responsible for pumping the logic used to*/
   /* detect events that will enable and disable the rumble function of  */
   /* the controller.  This should be called during the robots period    */
@@ -553,6 +586,8 @@ void RobotContainer::PumpRumble(void)
       /* Reset the rumble duty cycle counter.                           */
       m_rumbleDutyCycleCount = 0_s;
 
+      /* Set the rumble state to indicate that the rumble is no longer  */
+      /* active.                                                        */
       m_rumbleState = false;
    }
 }
@@ -563,11 +598,12 @@ void RobotContainer::PumpRumble(void)
   /* automatically slow the maximum speed allowable for driving.        */
 void RobotContainer::PumpDriveGovernor(void)
 {
+#ifdef USE_ARM
    /* Check to see if the drive speed governor is currently enabled.    */
    if(m_driveSpeedGovernorEntryPtr->GetBoolean(false))
    {
       /* The drive speed governor is currently enabled.                 */
-#ifdef USE_ARM
+
       /* Get the current angle of the arm and see if it is over the     */
       /* minimum angle to activate the drive governor.                  */
       if(m_arm.GetArmAngle() > kDriveGovernorArmActiveAngle)
@@ -595,21 +631,8 @@ void RobotContainer::PumpDriveGovernor(void)
          /* active.                                                     */
          m_driveGovernorActive = false;
       }
-#endif      
    }
-}
-
-  /* The following function is to reset the arm to its current position.*/
-  /* This should be done in each XXXInit phase of the robot to make up  */
-  /* for a possible change in position that can occure when the motors  */
-  /* are unpowered during current disabled phases.                      */
-void RobotContainer::ResetArmToCurrentPosition(void)
-{
-#ifdef USE_ARM   
-   /* Simply get the arms current position and set its goal position to */
-   /* be that position.                                                 */
-   m_arm.SetArmPosition(m_arm.GetArmAngle());
-#endif   
+#endif
 }
 
   /* Static command factory used to retrieve autonoumous paths from the  */

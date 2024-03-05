@@ -7,6 +7,7 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 #include <frc2/command/CommandScheduler.h>
 
+#include <cameraserver/CameraServer.h>
 #include <frc/DataLogManager.h>
 #include <frc/DriverStation.h>
 #include <wpinet/PortForwarder.h>
@@ -18,6 +19,9 @@ void Robot::RobotInit()
 
    // Record both DS control and joystick data
    frc::DriverStation::StartDataLog(frc::DataLogManager::GetLog());
+
+   /* Start automatic streaming of a drivers camera.                */
+//   frc::CameraServer::StartAutomaticCapture();
 
    // Forward the photon vision port so it can be seen from computers
    // when tethered to the USB port on the roboRIO.
@@ -36,6 +40,9 @@ void Robot::RobotInit()
  */
 void Robot::RobotPeriodic()
 {
+   /* Log the power distribution.                                       */
+   m_container.LogPowerDistribution();
+
    /* Get the latest values from shuffle board and set the subsystems to*/
    /* the updated state.                                                */
    m_container.PumpShuffleBoard();
@@ -52,7 +59,11 @@ void Robot::RobotPeriodic()
  * can use it to reset any subsystem information you want to clear when the
  * robot is disabled.
  */
-void Robot::DisabledInit() {}
+void Robot::DisabledInit()
+{
+   /* Disable any rumble that might currently be active.             */
+   m_container.DisableRumble();
+}
 
 void Robot::DisabledPeriodic() {}
 
@@ -69,8 +80,8 @@ void Robot::DisabledPeriodic() {}
  */
 void Robot::AutonomousInit()
 {
-   /* Reset the Arm location to its current position.                   */
-   m_container.ResetArmToCurrentPosition();
+   /* Disable any rumble that might currently be active.                */
+   m_container.DisableRumble();
 
    /* Get the currently selected autonomous command from the robot      */
    /* container.                                                        */
@@ -99,15 +110,14 @@ void Robot::TeleopInit()
      m_autonomousCommand.reset();
   }
 
-  /* Reset the Arm location to its current position (in case it has     */
-  /* drifted down during the end of Autonmous.                          */
-  m_container.ResetArmToCurrentPosition();
+   /* Disable any rumble that might currently be active.                */
+   m_container.DisableRumble();
 }
 
 /**
  * This function is called periodically during operator control.
  */
-void Robot::TeleopPeriodic() 
+void Robot::TeleopPeriodic()
 {
    /* Pump the periodic polling in the Robot Container that is used to  */
    /* control the controller rumble function.                           */

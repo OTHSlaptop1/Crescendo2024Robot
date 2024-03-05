@@ -2,35 +2,31 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-#include "subsystems/ArmSubsystem.h"
-
+#include "subsystems/Arm2Subsystem.h"
 #include "Constants.h"
 
 #include <networktables/NetworkTableInstance.h>
-
 #include <units/angle.h>
 #include <units/angular_velocity.h>
 #include <units/angular_acceleration.h>
-
-using namespace ArmConstants;
 
    /* The following constant defines the threhold percentage of the     */
    /* targeted Arm Position that the Arm must attain to complete this   */
    /* command.                                                          */
 #define ARM_UP_THRESHOLD_PERCENT                                     (0.98)
 
-ArmSubsystem::ArmSubsystem()
-    // The TrapezoidProfileSubsystem used by the subsystem
-    : TrapezoidProfileSubsystem(
-                // The constraints for the motion profiles
-                {kArmMaxVelocity, kArmMaxAcceleration},
-                // The initial position of the mechanism
-                0_rad),
-      m_leaderSparkMax(kArmLeaderCanId, rev::CANSparkMax::MotorType::kBrushless),
+Arm2Subsystem::Arm2Subsystem()
+   :  m_leaderSparkMax(kArmLeaderCanId, rev::CANSparkMax::MotorType::kBrushless),
       m_followerSparkMax(kArmFollwerCanId, rev::CANSparkMax::MotorType::kBrushless),
       m_feedForward{kS, kG, kV, kA}
-
 {
+   /* Set the arm to state to initializing.                             */
+   m_ArmState = asInitializing;
+
+   /* Initialize the initialization timer used to wait before determine */
+   /* our initial angle.                                                */
+   m_initializationTimer = 500_ms;
+
    // Factory reset, so we get the SPARKS MAX to a known state before configuring
    // them. This is useful in case a SPARK MAX is swapped out.
    m_leaderSparkMax.RestoreFactoryDefaults();
@@ -60,6 +56,10 @@ ArmSubsystem::ArmSubsystem()
 
    m_leaderSparkMax.EnableSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, true);
    m_leaderSparkMax.EnableSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, true);
+
+   /* Force the motors to be stopped before setting up the PID.         */
+   m_leaderSparkMax.StopMotor();
+   m_followerSparkMax.StopMotor();
 
    // Enable PID wrap around for the turning motor. This will allow the PID
    // controller to go through 0 to get to the setpoint i.e. going from 350
@@ -115,13 +115,6 @@ ArmSubsystem::ArmSubsystem()
    m_leaderSparkMax.BurnFlash();
    m_followerSparkMax.BurnFlash();
 
-   /* Set the goal to the initial position.  We can't seem to do it in */
-   /* the contructor initializers without throwing an exception.       */
-   this->SetGoal(units::radian_t{m_armAbsoluteEncoder.GetPosition()});
-
-   /* Enable the arm for use.                                        */
-   this->Enable();
-
    // Start publishing arm state information with the "/Arm" key
    m_armMeasuredPositionPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/MeasuredPosition").Publish();
    m_armSetpointPositionPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/SetpointPosition").Publish();
@@ -131,36 +124,86 @@ ArmSubsystem::ArmSubsystem()
    m_armAppliedOutputPublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/Arm/AppliedOutput").Publish();
 }
 
-   /* The following function consumes the output of the trapezoid       */
-   /* profile controller and the current setpoint state (which is used  */
-   /* for computing a feedforward value).  The trapezoid profile (that  */
-   /* is part of this object) automatically calls this method from its  */
-   /* perodic() block and passes this function the computed output from */
-   /* the control loop.                                                 */
-void ArmSubsystem::UseState(frc::TrapezoidProfile<units::radians>::State setpoint)
+// This method will be called once per scheduler run
+void Arm2Subsystem::Periodic()
 {
-   /* Calculate the feed forward from the specified setpoint.           */
-   units::volt_t feedforward = m_feedForward.Calculate((setpoint.position-kArmFeedforwardOffsetAngle), setpoint.velocity);
+   units::volt_t feedforward = 0_V;
 
-   /* Log the current arm output values.                                */
+   /* Log some of the values we want to log continuously.               */
    m_armMeasuredPositionPublisher.Set(GetArmAngle().value());
-   m_armSetpointPositionPublisher.Set(units::degree_t(setpoint.position).value());
-   m_armSetpointVelocityPublisher.Set(setpoint.velocity.value());
-   m_armOutputFeedForwardPublisher.Set(feedforward.value());
    m_armCurrentPublisher.Set(m_leaderSparkMax.GetOutputCurrent());
-
-   /* Set the position for the motor with the calculated feed forward   */
-   /* value.                                                            */
-   m_leaderPIDController.SetReference(setpoint.position.value(), rev::CANSparkMax::ControlType::kPosition, 0/*PID Slot*/, feedforward.value(), rev::SparkMaxPIDController::ArbFFUnits::kVoltage);
-
-   /* Get the actual voltage being applied to the motor.                */
    m_armAppliedOutputPublisher.Set(m_leaderSparkMax.GetAppliedOutput()*12);
+
+   /* Determine the current arm state.                                  */
+   switch(m_ArmState)
+   {
+      case asInitializing:
+         /* Currently in the initializing state.                        */
+
+         /* Adjust the initialization timer by a period.                */
+         m_initializationTimer = m_initializationTimer - 20_ms;
+
+         /* Now check to see if the initialization timer has expired.   */
+         if(m_initializationTimer <= 0_s)
+         {
+            /* The initialization time has expired.  Set the initial    */
+            /* position and goal position for the trapozoidal profile   */
+            /* state.                                                   */
+            m_goal    = {units::radian_t{GetArmAngle()}, units::radians_per_second_t{0.0}};
+            m_current = {units::radian_t{GetArmAngle()}, units::radians_per_second_t{0.0}};
+
+            /* Now set the state of the arm to the stopped state.       */
+            m_ArmState = asStopped;
+         }
+         break;
+      case asMovingUp:
+         /* Currently in the moving up state.                           */
+
+         /* Using the Up Trapazoid Profile calculate the the next step  */
+         /* to get to the goal position.                                */
+         m_current = m_upProfile.Calculate(20_ms, m_current, m_goal);
+
+         /* Calculate the feed forward from the specified setpoint.     */
+         feedforward = m_feedForward.Calculate((m_current.position-kArmFeedforwardOffsetAngle), m_current.velocity);
+
+         /* Set the position for the motor with the calculated feed     */
+         /* forward value.                                              */
+         m_leaderPIDController.SetReference(m_current.position.value(), rev::CANSparkMax::ControlType::kPosition, 0/*PID Slot*/, feedforward.value(), rev::SparkMaxPIDController::ArbFFUnits::kVoltage);
+         break;
+      case asMovingDown:
+         /* Currently in the moving down state.                         */
+
+         /* Using the Down Trapazoid Profile calculate the the next step*/
+         /* to get to the goal position.                                */
+         m_current = m_downProfile.Calculate(20_ms, m_current, m_goal);
+
+         /* Calculate the feed forward from the specified setpoint.     */
+         feedforward = m_feedForward.Calculate((m_current.position-kArmFeedforwardOffsetAngle), m_current.velocity);
+
+         /* Set the position for the motor with the calculated feed     */
+         /* forward value.                                              */
+         m_leaderPIDController.SetReference(m_current.position.value(), rev::CANSparkMax::ControlType::kPosition, 0/*PID Slot*/, feedforward.value(), rev::SparkMaxPIDController::ArbFFUnits::kVoltage);
+         break;
+      case asStopped:
+         /* Currently in the stopped state.                             */
+         break;
+      case asDisabled:
+         /* Currently in the disabled state.                            */
+
+         /* Do nothing.                                                 */
+         break;
+   }
+
+   /* Log the current arm output values.                          */
+   m_armSetpointPositionPublisher.Set(units::degree_t(m_current.position).value());
+   m_armSetpointVelocityPublisher.Set(m_current.velocity.value());
+   m_armOutputFeedForwardPublisher.Set(feedforward.value());
 }
 
    /* Returns the current angle of the arm in degress.                  */
    /* ** NOTE ** The output range of the absolute encoder is mapped to  */
    /*            be between -180 to 180 degrees.                        */
-units::degree_t ArmSubsystem::GetArmAngle(void)
+units::degree_t Arm2Subsystem::GetArmAngle(void)
 {
    units::radian_t ret_val;
 
@@ -176,28 +219,71 @@ units::degree_t ArmSubsystem::GetArmAngle(void)
 }
 
    /* Set the arm to the specified position.                            */
-void ArmSubsystem::SetArmPosition(units::degree_t setpoint)
+void Arm2Subsystem::SetArmPosition(units::degree_t setpoint)
 {
-   /* Enable the Arm for movement.                                      */
-   this->Enable();
+   /* Get the current angle of the arm.                                 */
+   units::degree_t currentAngle = GetArmAngle();
 
-   /* Set the goal for moving the arm subsystem to be maximum angle     */
-   /* supported by the arm.                                             */
-   this->SetGoal(units::radian_t{setpoint});
-}
-
-   /* Generates a command to set the arm position.                      */
-frc2::CommandPtr ArmSubsystem::SetArmPositionCommand(units::degree_t setpoint)
-{
    /* Clamp the angle to the minimum and maximum.                       */
    setpoint = std::clamp(setpoint, kArmMinimumAngle, kArmMaximumAngle);
 
+   /* Now check to see if the desired angle is up or down from the      */
+   /* current angle.                                                    */
+   if(setpoint > currentAngle)
+   {
+     /* The desired angle is up from the current angle.                 */
+
+     /* Set the arm state to indicate we want to go up from our current */
+     /* position.                                                       */
+     m_ArmState = asMovingUp;
+
+     /* Set the current position to be the current measured angle at the*/
+     /* last calculated velocity.                                       */
+     m_current = {units::radian_t{GetArmAngle()}, m_current.velocity};
+
+     /* Set the goal for movement to the specified position and ending  */
+     /* at a 0 velocity.                                                */
+     m_goal = {units::radian_t{setpoint}, units::radians_per_second_t{0.0}};
+   }
+   else
+   {
+     /* The desired angle is down from the current angle.               */
+
+     /* Set the arm state to indicate we want to go down from our       */
+     /* current position.                                               */
+     m_ArmState = asMovingDown;
+
+     /* Set the current position to be the current measured angle at the*/
+     /* last calculated velocity.                                       */
+     m_current = {units::radian_t{GetArmAngle()}, m_current.velocity};
+
+     /* Set the goal for movement to the specified position and ending  */
+     /* at a 0 velocity.                                                */
+     m_goal = {units::radian_t{setpoint}, units::radians_per_second_t{0.0}};
+   }
+}
+
+   /* Generates a command to set the arm position.                      */
+frc2::CommandPtr Arm2Subsystem::SetArmPositionCommand(units::degree_t setpoint)
+{
    /* Create a command to run the arm to the specified setpoint.        */
    return(frc2::cmd::RunOnce([this, setpoint] { this->SetArmPosition(setpoint); }, {this}));
 }
 
+  /* Disable the Arms motors.                                           */
+void Arm2Subsystem::DisableArm(void)
+{
+   /* Disable the arms motors and set the state to indicate we are      */
+   /* currently disabled.                                               */
+   m_leaderSparkMax.StopMotor();
+   m_followerSparkMax.StopMotor();
+
+   /* Set the Arm State to indicate that we are currently disabled.     */
+   m_ArmState = asDisabled;
+}
+
    /* Generates a command to move the arm up.                           */
-frc2::CommandPtr ArmSubsystem::ArmUpCommmand(void)
+frc2::CommandPtr Arm2Subsystem::ArmUpCommand(void)
 {
    /* Generated a command that enable and sets the goal to the maximum  */
    /* angle on initialization, does nothing while executing, stops the  */
@@ -218,7 +304,7 @@ frc2::CommandPtr ArmSubsystem::ArmUpCommmand(void)
                                                                                    /* The reason this command ended was because it was interrupts.   */
                                                                                    /* Set the goal angle for the arm to be the current angle to stop */
                                                                                    /* its motion.                                                    */
-                                                                                   this->SetGoal(units::radian_t{this->GetArmAngle()});
+                                                                                   this->SetArmPosition(units::radian_t{this->GetArmAngle()});
                                                                                 }
                                                                               },
                                                       [this]{
@@ -238,7 +324,7 @@ frc2::CommandPtr ArmSubsystem::ArmUpCommmand(void)
 }
 
    /* Generates a command to move the arm down.                         */
-frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
+frc2::CommandPtr Arm2Subsystem::ArmDownCommand(void)
 {
    /* Generated a command that enable and sets the goal to the minimum  */
    /* angle on initialization, does nothing while executing, stops the  */
@@ -259,19 +345,19 @@ frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
                                                                                    /* The reason this command ended was because it was interrupts.   */
                                                                                    /* Set the goal angle for the arm to be the current angle to stop */
                                                                                    /* its motion.                                                    */
-                                                                                   this->SetGoal(units::radian_t{this->GetArmAngle()});
+                                                                                   this->SetArmPosition(units::radian_t{this->GetArmAngle()});
                                                                                 }
                                                                                 else
                                                                                 {
                                                                                    /* The reason this command ended was because we have reached the  */
                                                                                    /* down position.  In this case disable the arm movement so it    */
                                                                                    /* relaxes to the lowest possible state.                           */
-                                                                                   this->Disable();
+                                                                                   this->DisableArm();
                                                                                 }
                                                                               },
                                                       [this]{
                                                                /* Now check to see if we are at the minimum angle.                  */
-                                                               if(this->GetArmAngle() <= 3.5_deg)
+                                                               if(this->GetArmAngle() <= 5_deg)
                                                                   return(true);
                                                                else
                                                                   return(false);
@@ -284,7 +370,3 @@ frc2::CommandPtr ArmSubsystem::ArmDownCommand(void)
    /* Return the command to the caller.                                 */
    return(ret_val);
 }
-
-
-
-
