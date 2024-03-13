@@ -1,0 +1,81 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 15.756903626487508,
+      "y": 4.552690795516611
+    },
+    "rotation": -119.05460409991123
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red Source- startleftspeakertotopmidtospeaker"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red Source- startleftspeakertomidtospeaker"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Red Source- AutoEnd3"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": false
+}

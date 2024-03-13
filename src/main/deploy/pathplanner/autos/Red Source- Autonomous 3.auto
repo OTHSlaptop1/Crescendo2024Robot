@@ -1,0 +1,31 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 15.82916855974557,
+      "y": 6.662826846780455
+    },
+    "rotation": 124.15969454566923
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "redshootandrun1"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": false
+}

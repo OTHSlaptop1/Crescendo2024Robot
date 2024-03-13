@@ -1,0 +1,81 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 15.82916855974557,
+      "y": 6.677279833432906
+    },
+    "rotation": 127.87498365109808
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red Source- startrighttomidtospeaker"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red Source- startrightspeakertotopmidtospeaker"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Auto End Path- Red Source"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": false
+}

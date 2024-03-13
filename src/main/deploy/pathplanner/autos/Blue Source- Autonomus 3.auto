@@ -1,0 +1,37 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 0.69689153462814,
+      "y": 6.662826846780455
+    },
+    "rotation": 53.3929251873925
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 12.25
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "blueshootandrun1"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": false
+}

@@ -168,4 +168,6 @@ units::revolutions_per_minute_t IntakeSubsystem::GetSetpointSpeed(void)
    return(m_currentSetpointSpeed);
 }
 
+// yellow rgbValue: (255, 222, 102) no note
+// blue rgbValue: (128, 166, 255) has note
 

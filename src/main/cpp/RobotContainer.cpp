@@ -112,8 +112,29 @@ RobotContainer::RobotContainer() {
   frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Autonomous/Set Pose/Reset Odometry")).OnTrue(frc2::cmd::RunOnce([this] { m_odometry.ResetOdometry({units::meter_t(m_SetPoseXEntryPtr->GetDouble(0.0)), units::meter_t(m_SetPoseYEntryPtr->GetDouble(0.0)), m_drive.GetRotation2dHeading()}); m_resetOdometryButton = false; }, {&m_drive, &m_odometry}));
 
   // Add Path Planner autos into the autonomous command chooser
-  m_chooser.SetDefaultOption("Speaker", std::bind(RobotContainer::PathPlannerCommandFactory, "testauto"));
-  m_chooser.AddOption("Speakertop", std::bind(RobotContainer::PathPlannerCommandFactory, "BlueSpeakerTop"));
+  //blue paths
+   m_chooser.SetDefaultOption("BlueShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8")); //start at middle of field
+   m_chooser.AddOption("BlueAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 1")); //start at the side closer to the speaker
+   m_chooser.AddOption("BlueSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 2")); //start at the side closer to the opposing teams source
+   m_chooser.AddOption("BlueShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 3"));
+   m_chooser.AddOption("BlueShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 4"));
+   m_chooser.AddOption("BlueRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 5"));
+   m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
+   m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
+   m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
+   
+  //red paths
+   m_chooser.AddOption("RedSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomous 2"));
+   m_chooser.AddOption("RedAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomous 1"));
+   m_chooser.AddOption("RedShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 3"));
+   m_chooser.AddOption("RedShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 4"));
+   m_chooser.AddOption("RedRapidFireSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 5"));
+   m_chooser.AddOption("RedRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 6"));
+   m_chooser.AddOption("RedShootAndStaySourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 7"));
+   m_chooser.AddOption("RedShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 8"));
+   
+
+
 
   // Put the chooser on the dashboard
   frc::Shuffleboard::GetTab("Autonomous").Add("Select Autonomous Path", m_chooser).WithSize(3, 2).WithPosition(0, 0);
@@ -128,7 +149,7 @@ RobotContainer::RobotContainer() {
   /* ************************* Teleops ******************************** */
   /* ****************************************************************** */
 
-  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Blue Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(0, 0);
+//  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Blue Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(0, 0);
 //  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Blue Commands").Add("Path To Amp", *(m_pathToBlueAmp.get())).WithPosition(0, 0);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").Add("Speaker Top", ).WithPosition(0, 1);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").Add("Speaker Mid", ).WithPosition(0, 2);
@@ -138,9 +159,9 @@ RobotContainer::RobotContainer() {
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").AddBoolean("Path To Amp", [this]{ return(m_pathToAmpButton); }).WithWidget(frc::BuiltInWidgets::kToggleButton).WithProperties({{"Label position", nt::Value::MakeString("HIDDEN")}}).WithPosition(0, 0);
 //  frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Teleops/Blue Commands/Path To Amp")).OnTrue( m_odometry.PathToPoseCommand(m_odometry.GetPoseFromAprilTagId(BLUE_AMP_TAG_ID, {0_m, -((kWheelBase/2)+0.25_m), frc::Rotation2d{90_deg}}), 0_mps, 0_m) );
 
-  frc::Shuffleboard::GetTab("Teleoperated").Add("Field", m_field).WithProperties({{"robot_width", nt::Value::MakeDouble(kTrackWidth.value())}, {"robot_length", nt::Value::MakeDouble(kWheelBase.value())}}).WithSize(10, 5).WithPosition(2, 0);
-
-  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(12, 0);
+  frc::Shuffleboard::GetTab("Teleoperated").Add("Field", m_field).WithProperties({{"robot_width", nt::Value::MakeDouble(kTrackWidth.value())}, {"robot_length", nt::Value::MakeDouble(kWheelBase.value())}}).WithSize(10, 5).WithPosition(0, 0);
+  frc::Shuffleboard::GetTab("Teleoperated").AddBoolean("Is Field Relative", [this]{ return(!m_drive.GetFieldRelativeState()); }).WithPosition(6, 0);
+//  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(12, 0);
 //  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands").Add("Path To Amp", *(m_pathToRedAmp.get())).WithPosition(0, 0);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Red Commands").Add("Speaker Top", ).WithPosition(0, 1);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Red Commands").Add("Speaker Mid", ).WithPosition(0, 2);
@@ -159,7 +180,7 @@ RobotContainer::RobotContainer() {
   m_maxAngularSpeedEntryPtr          = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Maximum Angular Speed", units::degrees_per_second_t(m_drive.GetMaxAngularSpeed()).value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble(units::degrees_per_second_t(kDefaultMaxAngularSpeed).value())}}).WithPosition(0, 2).GetEntry();
   m_driveSpeedGovernorEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Drive Speed Governor", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
   m_triggerBasedSpeedControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Trigger Speed Control", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
-  m_fieldRelativeStateEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Field Relative", m_drive.GetFieldRelativeState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
+//  m_fieldRelativeStateEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Field Relative", m_drive.GetFieldRelativeState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
   m_limitSlewRateEntryPtr            = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Limit Slew Rate", m_drive.GetLimitSlewRateState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 5).GetEntry();
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").AddDouble("Gyro Heading", [this]{ return(std::fabs((std::fmod(m_drive.GetHeading().value(), 360.0)))); }).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
 
@@ -252,6 +273,8 @@ void RobotContainer::ConfigureButtonBindings()
    /* Set the X button to zero the gyro heading.                        */
    m_driverController.X().OnTrue(frc2::cmd::RunOnce([this] { m_drive.ZeroHeading(); }, {&m_drive}));
 
+   m_driverController.A().OnTrue(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(false); }, {&m_drive})).OnFalse(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(true); }, {&m_drive}));
+
 #ifdef USE_INTAKE
    /* Set the Right Trigger to run the intake until a note is grabbed or*/
    /* the right trigger is released.                                    */
@@ -277,8 +300,8 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  500_rpm,        // shooter left flywheel speed (rpm)
-                                                                                  500_rpm,        // shooter right flywheel speed (rpm
+                                                                                  2000_rpm,        // shooter left flywheel speed (rpm)
+                                                                                  2000_rpm,        // shooter right flywheel speed (rpm)
                                                                                   2_s,            // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
@@ -378,7 +401,7 @@ void RobotContainer::PumpShuffleBoard(void)
 
    /* Update the field relative state and the limit slew rate state     */
    /* based on the current position of the shuffle board switches.      */
-   m_drive.SetFieldRelativeState(m_fieldRelativeStateEntryPtr->GetBoolean(true));
+//   m_drive.SetFieldRelativeState(m_fieldRelativeStateEntryPtr->GetBoolean(true));
    m_drive.SetLimitSlewRateState(m_limitSlewRateEntryPtr->GetBoolean(true));
 
 #ifdef USE_INTAKE

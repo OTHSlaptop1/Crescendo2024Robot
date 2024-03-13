@@ -40,7 +40,7 @@
 #define RED_AMP_TAG_ID                                               (5)
 #define BLUE_AMP_TAG_ID                                              (6)
 
-//#define USE_OPERATOR_CONTROLLER
+#define USE_OPERATOR_CONTROLLER
 #define USE_INTAKE
 #define USE_SHOOTER
 #define USE_ARM
