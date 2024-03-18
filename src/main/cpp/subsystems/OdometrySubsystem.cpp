@@ -78,7 +78,7 @@ OdometrySubsystem::OdometrySubsystem(DriveSubsystem *driveSubsystemPtr, VisionSu
                         [this](){ return this->GetPose(); },                                                                             // a function that returns the robot's current pose
                         [this](frc::Pose2d pose){ this->ResetOdometry(pose); },                                                          // a function used for resetting the robot's pose (will be called if your auto has a starting pose)
                         [this](){ return m_driveSubsystemPtr->GetRobotRelativeChassisSpeeds(); },                                        // a function that returns the robot's current robot relative chassis speeds
-                        [this](frc::ChassisSpeeds robotRelativeSpeeds){ m_driveSubsystemPtr->DriveRobotRelative(robotRelativeSpeeds); }, // a function for setting the robot's robot-relative chassis speeds
+                        [this](frc::ChassisSpeeds robotRelativeSpeeds){ m_driveSubsystemPtr->SetChassisSpeed(robotRelativeSpeeds); },    // a function for setting the robot's robot-relative chassis speeds
                         pathplanner::HolonomicPathFollowerConfig(                                                                        // HolonomicPathFollowerConfig for configuring the path following commands
                            pathplanner::PIDConstants(kHolonomicPathFollowerConfigTranslationP,
                                                      kHolonomicPathFollowerConfigTranslationI,
@@ -219,12 +219,20 @@ frc::Pose2d OdometrySubsystem::GetPose()
 {
    frc::Pose2d ret_val;
 
-   /* Make sure that the required member variables appear to be at least*/
-   /* semi-valid.                                                       */
-   if(m_odometryPtr != NULL)
+   /* Now check to see if a vision subsystem was specified.             */
+   if(m_visionSubsystemPtr == NULL)
    {
+      /* Currently no vision subsystem.  Fall back to simple swerve     */
+      /* drive odometry.                                                */
+
       /* Simply get the current position on the field.                  */
       ret_val = m_odometryPtr->GetPose();
+   }
+   else
+   {
+      /* A vision subsystem was specified.  So we can use it for        */
+      /* position estimation in our odometry.                           */
+      ret_val = m_poseEstimatorPtr->GetEstimatedPosition();
    }
 
    return(ret_val);

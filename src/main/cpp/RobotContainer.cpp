@@ -32,6 +32,8 @@
 #include "Constants.h"
 
 #include "commands/ShootNoteFromIntakeCommand.h"
+#include "commands/ShootNoteFromIntakeByArmPositionCommand.h"
+#include "commands/DriveFieldRelativeWithAngularVelocityCommand.h"
 
 #include "subsystems/DriveSubsystem.h"
 #include "subsystems/OdometrySubsystem.h"
@@ -63,16 +65,18 @@ RobotContainer::RobotContainer() {
   /* Register the Arm Up Command.                                            */
   pathplanner::NamedCommands::registerCommand("ArmUp", std::move(m_arm.ArmUpCommand()));
 
-  /* Register the Arm Down Command.                                            */
+  /* Register the Arm Down Command.                                          */
   pathplanner::NamedCommands::registerCommand("ArmDown", std::move(m_arm.ArmDownCommand()));
 #endif
 
   /* Initialze the power distribution panel logging.                          */
   m_pdpVoltagePublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Voltage").Publish();
-  m_pdpTemperaturePublisher = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Temperature").Publish();
   m_pdpCurrentPublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Current").Publish();
   m_pdpPowerPublisher       = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Power").Publish();
-  m_pdpEnergyPublisher      = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Energy").Publish();
+  m_pdpTotalPowerPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/TotalPower").Publish();
+
+  /* Initialize the total power consumtion.                             */
+  m_totalPower              = 0;
 
   /* Initialize the internal variables to a known initial state.        */
   m_rumbleDutyCycleCount         = 0_s;
@@ -90,6 +94,9 @@ RobotContainer::RobotContainer() {
   m_armLastDashboardSetPoint     = std::numeric_limits<double>::quiet_NaN();
 
   // Initialize all of your commands and subsystems here
+
+/// test display....
+   m_display.DisplayToggle(1500_ms, frc::Color8Bit{128, 128, 0}, frc::Color8Bit{0, 0, 128});
 
   // Configure the button bindings
   ConfigureButtonBindings();
@@ -117,7 +124,7 @@ RobotContainer::RobotContainer() {
    m_chooser.AddOption("BlueAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 1")); //start at the side closer to the speaker
    m_chooser.AddOption("BlueSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 2")); //start at the side closer to the opposing teams source
    m_chooser.AddOption("BlueShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 3"));
-   m_chooser.AddOption("BlueShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 4"));
+  m_chooser.AddOption("BlueShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 4"));
    m_chooser.AddOption("BlueRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 5"));
    m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
    m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
@@ -159,8 +166,8 @@ RobotContainer::RobotContainer() {
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Blue Commands").AddBoolean("Path To Amp", [this]{ return(m_pathToAmpButton); }).WithWidget(frc::BuiltInWidgets::kToggleButton).WithProperties({{"Label position", nt::Value::MakeString("HIDDEN")}}).WithPosition(0, 0);
 //  frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Teleops/Blue Commands/Path To Amp")).OnTrue( m_odometry.PathToPoseCommand(m_odometry.GetPoseFromAprilTagId(BLUE_AMP_TAG_ID, {0_m, -((kWheelBase/2)+0.25_m), frc::Rotation2d{90_deg}}), 0_mps, 0_m) );
 
-  frc::Shuffleboard::GetTab("Teleoperated").Add("Field", m_field).WithProperties({{"robot_width", nt::Value::MakeDouble(kTrackWidth.value())}, {"robot_length", nt::Value::MakeDouble(kWheelBase.value())}}).WithSize(10, 5).WithPosition(0, 0);
-  frc::Shuffleboard::GetTab("Teleoperated").AddBoolean("Is Field Relative", [this]{ return(!m_drive.GetFieldRelativeState()); }).WithPosition(6, 0);
+  frc::Shuffleboard::GetTab("Teleoperated").Add("Field", m_field).WithProperties({{"robot_width", nt::Value::MakeDouble(kTrackWidth.value())}, {"robot_length", nt::Value::MakeDouble(kWheelBase.value())}}).WithSize(10, 5).WithPosition(2, 0);
+
 //  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands", frc::BuiltInLayouts::kList).WithSize(2, 5).WithPosition(12, 0);
 //  frc::Shuffleboard::GetTab("Teleoperated").GetLayout("Red Commands").Add("Path To Amp", *(m_pathToRedAmp.get())).WithPosition(0, 0);
 //  frc::Shuffleboard::GetTab("Teleops").GetLayout("Red Commands").Add("Speaker Top", ).WithPosition(0, 1);
@@ -182,7 +189,8 @@ RobotContainer::RobotContainer() {
   m_triggerBasedSpeedControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Trigger Speed Control", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
 //  m_fieldRelativeStateEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Field Relative", m_drive.GetFieldRelativeState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
   m_limitSlewRateEntryPtr            = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Limit Slew Rate", m_drive.GetLimitSlewRateState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 5).GetEntry();
-  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").AddDouble("Gyro Heading", [this]{ return(std::fabs((std::fmod(m_drive.GetHeading().value(), 360.0)))); }).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
+//  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").AddDouble("Gyro Heading", [this]{ return(std::fabs((std::fmod(m_drive.GetHeading().value(), 360.0)))); }).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
+  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Gyro Heading", m_drive.GetGyro()).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
 
   /* Add a button to reset the gyro using a triggered network button    */
   /* command.  Note this clears the boolean after running the function  */
@@ -243,6 +251,7 @@ RobotContainer::RobotContainer() {
   /* Change the Tab to automatically start on the subsystems tab.       */
   frc::Shuffleboard::SelectTab("Subsystems");
 
+#if 1
   /* Create a command to be used as the default command for the drive   */
   /* subsystem.  The left stick controls translation of the robot.      */
   /* Turning is controlled by the X axis of the right stick.            */
@@ -262,6 +271,16 @@ RobotContainer::RobotContainer() {
 
   // Set up default drive command
   m_drive.SetDefaultCommand(std::move(JoystickDriveCommand));
+#else
+  // Set up the default drive command.
+  m_drive.SetDefaultCommand(std::move(DriveFieldRelativeWithAngularVelocityCommand(
+                                                                                   &m_drive,
+                                                                                   &m_odometry,
+                                                                                   [this]{ return(-units::meters_per_second_t{frc::ApplyDeadband(m_driverController.GetLeftY(), OIConstants::kDriveDeadband)}); },
+                                                                                   [this]{ return(-units::meters_per_second_t{frc::ApplyDeadband(m_driverController.GetLeftX(), OIConstants::kDriveDeadband)}); },
+                                                                                   [this]{ return(-units::meters_per_second_t{frc::ApplyDeadband(m_driverController.GetRightX(), OIConstants::kDriveDeadband)}); }
+                                                                                  ).ToPtr()));
+#endif
 }
 
 void RobotContainer::ConfigureButtonBindings()
@@ -273,8 +292,6 @@ void RobotContainer::ConfigureButtonBindings()
    /* Set the X button to zero the gyro heading.                        */
    m_driverController.X().OnTrue(frc2::cmd::RunOnce([this] { m_drive.ZeroHeading(); }, {&m_drive}));
 
-   m_driverController.A().OnTrue(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(false); }, {&m_drive})).OnFalse(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(true); }, {&m_drive}));
-
 #ifdef USE_INTAKE
    /* Set the Right Trigger to run the intake until a note is grabbed or*/
    /* the right trigger is released.                                    */
@@ -282,6 +299,7 @@ void RobotContainer::ConfigureButtonBindings()
 #endif
 
 #ifdef USE_SHOOTER
+#if 1
    /* Set the Right Bumper to run the shooter while the right bumper is */
    /* pressed then stop the shooter once the bumper is released.        */
    m_driverController.RightBumper().WhileTrue(std::move(ShootNoteFromIntakeCommand(
@@ -300,12 +318,32 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  2000_rpm,        // shooter left flywheel speed (rpm)
-                                                                                  2000_rpm,        // shooter right flywheel speed (rpm)
+                                                                                  2000_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  2000_rpm,       // shooter right flywheel speed (rpm
                                                                                   2_s,            // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
+#else
+   /* Set the Right Bumper to run the shooter while the right bumper is */
+   /* pressed then stop the shooter once the bumper is released.        */
+   m_driverController.RightBumper().WhileTrue(std::move(ShootNoteFromIntakeByArmPositionCommand(
+                                                                                                &m_intake,      // intake subsystem pointer
+                                                                                                9500_rpm,       // intake output to shooter speed (rpm)
+                                                                                                &m_shooter,     // shooter subsystem pointer
+                                                                                                4875_rpm,       // shooter left flywheel speed (rpm) when arm is in down position
+                                                                                                4375_rpm,       // shooter right flywheel speed (rpm) when arm is in down position
+                                                                                                2000_rpm,       // shooter left flywheel speed (rpm) when arm is in up position
+                                                                                                2000_rpm,       // shooter right flywheel speed (rpm) when arm is in up position
+                                                                                                3.0_s,          // shooter flywheel spinup timeout
+                                                                                                0.750_s,        // after intake enabled time till complete
+                                                                                                &m_arm          // arm subsystem pointer
+                                                                                                ).ToPtr()));
 
+   /* Set the Left Bummper to toggle between Field Relative and None    */
+   /* Field Relative states.                                            */
+   m_driverController.LeftBumper().OnTrue(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(false); }, {&m_drive}))
+                                  .OnFalse(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(true); }, {&m_drive}));
+#endif
 #endif
 
 #ifdef USE_OPERATOR_CONTROLLER
@@ -319,6 +357,9 @@ void RobotContainer::ConfigureButtonBindings()
    frc2::POVButton(&m_operatorController, 180).WhileTrue(m_arm.ArmDownCommand());
    frc2::POVButton(&m_operatorController, 135).WhileTrue(m_arm.ArmDownCommand());
    frc2::POVButton(&m_operatorController, 225).WhileTrue(m_arm.ArmDownCommand());
+#endif
+#ifdef USE_INTAKE
+//xxx add some command for in and out the intake to possible fix stuck notes..
 #endif
 #endif
 }
@@ -339,12 +380,22 @@ frc2::CommandPtr RobotContainer::GetAutonomousCommand()
   /* distribution.                                                      */
 void RobotContainer::LogPowerDistribution(void)
 {
+   double pdpVoltage;
+   double pdpCurrent;
+
+   /* Get the instantanous voltage and current.                         */
+   pdpVoltage = m_PDP.GetVoltage();
+   pdpCurrent = m_PDP.GetTotalCurrent();
+
+   /* Add the current instantaneous power to the total accumulated power*/
+   /* used.                                                             */
+   m_totalPower = m_totalPower + (pdpVoltage*pdpCurrent);
+
    /* Log the current state of the power distribution panel             */
-   m_pdpVoltagePublisher.Set(m_PDP.GetVoltage());
-   m_pdpTemperaturePublisher.Set(m_PDP.GetTemperature());
-   m_pdpCurrentPublisher.Set(m_PDP.GetTotalCurrent());
-   m_pdpPowerPublisher.Set(m_PDP.GetTotalPower());
-   m_pdpEnergyPublisher.Set(m_PDP.GetTotalEnergy());
+   m_pdpVoltagePublisher.Set(pdpVoltage);
+   m_pdpCurrentPublisher.Set(pdpCurrent);
+   m_pdpPowerPublisher.Set((pdpVoltage*pdpCurrent));
+   m_pdpTotalPowerPublisher.Set(m_totalPower);
 }
 
    /* The following function is responsible for pumping changes made in */
@@ -552,6 +603,11 @@ void RobotContainer::DisableRumble(void)
 {
    /* Stop rumbling.                                                     */
    m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.0);
+
+   /* The display is set to be synchronized with the rumble function for*/
+   /* note indication.  Set the display to off.                         */
+   m_display.DisplayOff();
+
 }
 
   /* The following function is responsible for pumping the logic used to*/
@@ -585,6 +641,11 @@ void RobotContainer::PumpRumble(void)
             /* Set the rumble state to indicate that the rumble is no   */
             /* longer active.                                           */
             m_rumbleState = false;
+
+            /* There is a note in the intake to indicate this we will   */
+            /* toggle between 2 colors.  Set the display to "yellow".   */
+            m_display.DisplayOn(frc::Color8Bit{128, 111, 0});
+
          }
          else
          {
@@ -598,6 +659,10 @@ void RobotContainer::PumpRumble(void)
             /* Set the rumble state to indicate that the rumble is      */
             /* currently active.                                        */
             m_rumbleState = true;
+
+            /* There is a note in the intake to indicate this we will   */
+            /* toggle between 2 colors.  Set the display to "blue".     */
+            m_display.DisplayOn(frc::Color8Bit{0, 0, 128});
          }
       }
    }
@@ -605,6 +670,9 @@ void RobotContainer::PumpRumble(void)
    {
       /* There is not currently a NOTE in the intake.  Disable rumble.  */
       m_driverController.SetRumble(frc::GenericHID::RumbleType::kBothRumble, 0.0);
+
+      /* There isn't a note in the intake.  Turn the display off.       */
+      m_display.DisplayOff();
 
       /* Reset the rumble duty cycle counter.                           */
       m_rumbleDutyCycleCount = 0_s;

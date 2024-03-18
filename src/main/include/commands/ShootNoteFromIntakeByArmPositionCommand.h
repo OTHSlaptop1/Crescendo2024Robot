@@ -11,16 +11,18 @@
 
 #include "subsystems/IntakeSubsystem.h"
 #include "subsystems/ShooterSubsystem.h"
+#include "subsystems/Arm2Subsystem.h"
 
 /**
  * <p>Note that this extends CommandHelper, rather extending Command
  * directly; this is crucially important, or else the decorator functions in
  * Command will *not* work!
  */
-class ShootNoteFromIntakeCommand : public frc2::CommandHelper<frc2::Command, ShootNoteFromIntakeCommand>
+class ShootNoteFromIntakeByArmPositionCommand : public frc2::CommandHelper<frc2::Command, ShootNoteFromIntakeByArmPositionCommand>
 {
  public:
-  ShootNoteFromIntakeCommand(IntakeSubsystem *intakeSubsystem, units::revolutions_per_minute_t intakeOutputSpeed, ShooterSubsystem *shooterSubsystem, units::revolutions_per_minute_t leftTargetSpeed, units::revolutions_per_minute_t rightTargetSpeed, units::second_t shooterSpinUpTimeout, units::second_t launchTimeout);
+
+  ShootNoteFromIntakeByArmPositionCommand(IntakeSubsystem *intakeSubsystem, units::revolutions_per_minute_t intakeOutputSpeed, ShooterSubsystem *shooterSubsystem, units::revolutions_per_minute_t armDownLeftTargetSpeed, units::revolutions_per_minute_t armDownRightTargetSpeed, units::revolutions_per_minute_t armUpLeftTargetSpeed, units::revolutions_per_minute_t armUpRightTargetSpeed, units::second_t shooterSpinUpTimeout, units::second_t launchTimeout, Arm2Subsystem *armSubsystem);
 
   void Initialize() override;
 
@@ -31,6 +33,7 @@ class ShootNoteFromIntakeCommand : public frc2::CommandHelper<frc2::Command, Sho
   bool IsFinished() override;
 
  private:
+
    /* The following enumerated type defines all of the possible commands*/
    /* states.                                                           */
    typedef enum
@@ -40,13 +43,27 @@ class ShootNoteFromIntakeCommand : public frc2::CommandHelper<frc2::Command, Sho
       csCommandOver
    } CommandState_t;
 
-    /* The following variables are pointer to ths intake and shooter    */
-    /* subsystems to be used by this command.                           */
+    /* The following variables are pointer to the various subsystem to  */
+    /* be used by this command.                                         */
     IntakeSubsystem  *m_intakeSubsystem;
     ShooterSubsystem *m_shooterSubsystem;
+    Arm2Subsystem    *m_armSubsystem;
 
-    /* The following variable holds the desired target speeds for the   */
-    /* left and right flywheels in the shooter.                         */
+    /* The following variables holds the desired target speeds for the  */
+    /* left and right flywheels in the shooter if the arm is in the down*/
+    /* position.                                                        */
+    units::revolutions_per_minute_t m_armDownLeftTargetSpeed;
+    units::revolutions_per_minute_t m_armDownRightTargetSpeed;
+
+    /* The following variables holds the desired target speeds for the  */
+    /* left and right flywheels in the shooter if the arm is in the up  */
+    /* position.                                                        */
+    units::revolutions_per_minute_t m_armUpLeftTargetSpeed;
+    units::revolutions_per_minute_t m_armUpRightTargetSpeed;
+
+    /* The following variables holds the target speeds to used for the  */
+    /* left and right flywheels in the shooter.  These are the actual   */
+    /* speed the shooter will spin up to based on the arm position.     */
     units::revolutions_per_minute_t m_leftTargetSpeed;
     units::revolutions_per_minute_t m_rightTargetSpeed;
 

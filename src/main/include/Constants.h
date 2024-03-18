@@ -86,7 +86,7 @@ constexpr bool kTurningMotorInverted = true;
 // Calculations required for driving motor conversion factors and feed forward
 constexpr double kDrivingMotorFreeSpeedRps = 5676.0 / 60;  // NEO free speed is 5676 RPM
 
-constexpr units::meter_t kWheelDiameter      = 0.097282_m;  // 3.82 inches in meters
+constexpr units::meter_t kWheelDiameter      = 0.1016_m;  // 4 inches in meters
 constexpr units::meter_t kWheelCircumference = kWheelDiameter * std::numbers::pi;
 
 // Swerve Drive Specialist Driving Gear Ratio is 6.12:1
@@ -245,19 +245,22 @@ namespace ArmConstants {
    constexpr double kArmEncoderVelocityFactor =  (2 * std::numbers::pi) / 60.0;  // radians per second
 
    constexpr units::degree_t kArmMinimumAngle = -3.0_deg;
-   constexpr units::degree_t kArmMaximumAngle = 97_deg;
+   constexpr units::degree_t kArmMaximumAngle = 97.0_deg;
    constexpr units::degree_t kArmFeedforwardOffsetAngle = 13.5_deg;
+
+   constexpr units::degree_t kArmSoftLimitMinimumAngle = -4.0_deg;
+   constexpr units::degree_t kArmSoftLimitMaximumAngle = 99_deg;
 
    constexpr units::radian_t kArmEncoderPositionPIDMinInput = 0_rad;
    constexpr units::radian_t kArmEncoderPositionPIDMaxInput = units::radian_t{kArmEncoderPositionFactor};
 
    /* Arm PID constants.            */
-   constexpr double kArmP  = 0.45;                                 // 100:1 0.785
-   constexpr double kArmI  = 0.0;                                  // 100:1 0.0
-   constexpr double kArmD  = 0.145;                                // 100:1 0.180
-   constexpr double kArmFF = 0.0;                                  // 100:1 0.0
-   constexpr double kArmMinOutput = -1;                            // 100:1 -1
-   constexpr double kArmMaxOutput = 1;                             // 100:1  1
+   constexpr double kArmP  = 0.45;                           // 100:1 0.785
+   constexpr double kArmI  = 0.0;                            // 100:1 0.0
+   constexpr double kArmD  = 0.145;                          // 100:1 0.180
+   constexpr double kArmFF = 0.0;                            // 100:1 0.0
+   constexpr double kArmMinOutput = -1;                      // 100:1 -1
+   constexpr double kArmMaxOutput = 1;                       // 100:1  1
 
 //xxx arm 2 subsystem
    constexpr units::radians_per_second_t kArmUpMaxVelocity               = units::radians_per_second_t{90_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
@@ -285,13 +288,29 @@ namespace LiftConstants {
 
    constexpr int kLiftCanId  = 14;
 
+   constexpr int kLiftServoChannel = 0;
+
+   constexpr double kLiftServoReleaseAngle = 125;
+   constexpr double kLiftServoLatchAngle   = 45;
+
+   constexpr double kLiftMaximumValue      = 247.0;
+
    /* Lift PID constants.                                               */
    constexpr double kLiftP  = 0.5;
    constexpr double kLiftI  = 0.0;
    constexpr double kLiftD  = 0.0;
 
+} // namespace LiftContants
 
-} // namespace LiftContrants
+namespace DisplayContants {
+
+   // Constant defines the PWM port used by the addressable LED display.
+   constexpr int kDisplayPWMPort = 9;
+
+   // Constant defines the length of the display in LEDs.
+   constexpr int kDisplayLength = 30;
+
+}  //namespace DispalyConstants
 
 namespace OIConstants
 {

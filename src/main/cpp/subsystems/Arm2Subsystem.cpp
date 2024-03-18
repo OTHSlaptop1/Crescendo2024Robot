@@ -51,8 +51,8 @@ Arm2Subsystem::Arm2Subsystem()
 
    /* Set limits in the spark max for the controller to not move past  */
    /* the maximum angles of motion.                                    */
-   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, units::radian_t{kArmMinimumAngle}.value());
-   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, units::radian_t{kArmMaximumAngle}.value());
+   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, units::radian_t{kArmSoftLimitMinimumAngle}.value());
+   m_leaderSparkMax.SetSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, units::radian_t{kArmSoftLimitMaximumAngle}.value());
 
    m_leaderSparkMax.EnableSoftLimit(rev::CANSparkBase::SoftLimitDirection::kReverse, true);
    m_leaderSparkMax.EnableSoftLimit(rev::CANSparkBase::SoftLimitDirection::kForward, true);

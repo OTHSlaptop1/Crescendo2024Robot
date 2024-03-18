@@ -24,8 +24,7 @@ DriveSubsystem::DriveSubsystem(bool fieldRelativeState, bool limitSlewRate)
     : m_frontLeft{kFrontLeftDrivingCanId, kFrontLeftTurningCanId},
       m_frontRight{kFrontRightDrivingCanId, kFrontRightTurningCanId},
       m_rearLeft{kRearLeftDrivingCanId, kRearLeftTurningCanId},
-      m_rearRight{kRearRightDrivingCanId, kRearRightTurningCanId},
-      m_aimController{kSpeakerAimP, kSpeakerAimI, kSpeakerAimD}
+      m_rearRight{kRearRightDrivingCanId, kRearRightTurningCanId}
 {
 
    /* Set the name for this subsystem.                                  */
@@ -59,9 +58,6 @@ DriveSubsystem::DriveSubsystem(bool fieldRelativeState, bool limitSlewRate)
    m_fieldRelative = fieldRelativeState;
    m_limitSlewRate = limitSlewRate;
 
-   /* Set the tolerance of the Aim PID controller.                      */
-   m_aimController.SetTolerance(kSpeakerAimTolerance.value());
-
    // Start publishing an array of module states with the "/SwerveStates" key
    m_swerveMeasuredPublisher           = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/Measured").Publish();
    m_swerveSetpointsPublisher          = nt::NetworkTableInstance::GetDefault().GetStructArrayTopic<frc::SwerveModuleState>("/SwerveStates/Setpoints").Publish();
@@ -86,6 +82,13 @@ void DriveSubsystem::Periodic()
    m_swerveTurnCurrentPublisher.Set(std::vector{m_frontLeft.GetTurnCurrent(), m_frontRight.GetTurnCurrent(), m_rearLeft.GetTurnCurrent(), m_rearRight.GetTurnCurrent()});
 }
 
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED, IT USES ESTIMATED ROTATION CORRECTLY)
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED)
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED)
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED)
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED)
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED)
+//xxx DEPRECATED :::: USE DRIVE FIELD RELATIVE WITH ANGULAR VELOCITY COMMAND INSTEAD!!!! (ONCE IT HAS BEEN TESTED)
 void DriveSubsystem::Drive(units::meters_per_second_t xSpeed, units::meters_per_second_t ySpeed, units::radians_per_second_t rot)
 {
    double                 xSpeedCommanded;
@@ -232,142 +235,9 @@ void DriveSubsystem::Drive(units::meters_per_second_t xSpeed, units::meters_per_
    m_swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
 }
 
-   /* Drives the robot at given x and y speed while using PID to control*/
-   /* the rotation.  Rotation will be locked to the speakers location.  */
-   /* Speeds range from [-1, 1] and the linear speeds have no effect on */
-   /* the angular speed.                                                */
-   /* ** NOTE ** This function uses field relative controls while       */
-   /*            operating.                                             */
-void DriveSubsystem::DriveWithSpeakerAim(units::meters_per_second_t xSpeed, units::meters_per_second_t ySpeed)
-{
-   double                 xSpeedCommanded;
-   double                 ySpeedCommanded;
-   frc::SwerveModuleState frontLeftOptimizedState{};
-   frc::SwerveModuleState frontRightOptimizedState{};
-   frc::SwerveModuleState rearLeftOptimizedState{};
-   frc::SwerveModuleState rearRightOptimizedState{};
-   frc::ChassisSpeeds     ChassisSpeeds;
-
-   /* First check to see if we need to use rate limiting while driving  */
-   /* to the new specified location.                                    */
-   if(m_limitSlewRate)
-   {
-      // Convert XY to polar for rate limiting
-      double inputTranslationDir = atan2(ySpeed.value(), xSpeed.value());
-      double inputTranslationMag = sqrt(pow(xSpeed.value(), 2) + pow(ySpeed.value(), 2));
-
-      // Calculate the direction slew rate based on an estimate of the lateral
-      // acceleration
-      double directionSlewRate;
-      if(m_currentTranslationMag != 0.0)
-      {
-         directionSlewRate = abs(DriveConstants::kDirectionSlewRate / m_currentTranslationMag);
-      }
-      else
-      {
-         // some high number that means the slew rate is effectively instantaneous
-         directionSlewRate = 500.0;
-      }
-
-      double currentTime = wpi::Now() * 1e-6;
-      double elapsedTime = currentTime - m_prevTime;
-      double angleDif    = SwerveUtils::AngleDifference(inputTranslationDir, m_currentTranslationDir);  // calculate the
-
-      if(angleDif < 0.45 * std::numbers::pi)   // angle difference less than 0.45*Pi rad or 81 degrees
-      {
-        m_currentTranslationDir = SwerveUtils::StepTowardsCircular(m_currentTranslationDir, inputTranslationDir, (directionSlewRate * elapsedTime));
-        m_currentTranslationMag = m_magLimiter.Calculate(inputTranslationMag);
-      }
-      else if(angleDif > 0.85 * std::numbers::pi)  // angle difference greater than 0.85*Pi rad or 153 degrees
-      {
-        /* Compare versus some small number to avoid floating-point     */
-        /* errors with equality checking.  This is effectively a        */
-        /* comparison vs zero value.                                    */
-        /* ** NOTE ** I think this keeps the turn motors from changing  */
-        /*            positions when the commanded velocity is zero??   */
-        /* ** NOTE ** See https://www.youtube.com/watch?v=0Xi9yb1IMyA   */
-        /*            around 9:15 second mark for example of this.  If  */
-        /*            this is no what this is doing, it might be worth  */
-        /*            adding it to the SetDesiredState() function in the*/
-        /*            actual swerve module code.                        */
-        if(m_currentTranslationMag > 1e-4)
-        {
-           // keep currentTranslationDir unchanged
-           m_currentTranslationMag = m_magLimiter.Calculate(0.0);
-        }
-        else
-        {
-           m_currentTranslationDir = SwerveUtils::WrapAngle(m_currentTranslationDir + std::numbers::pi);
-           m_currentTranslationMag = m_magLimiter.Calculate(inputTranslationMag);
-        }
-      }
-      else
-      {
-         m_currentTranslationDir = SwerveUtils::StepTowardsCircular(m_currentTranslationDir, inputTranslationDir, (directionSlewRate * elapsedTime));
-         m_currentTranslationMag = m_magLimiter.Calculate(0.0);
-      }
-
-      m_prevTime = currentTime;
-
-      xSpeedCommanded   = m_currentTranslationMag * cos(m_currentTranslationDir);
-      ySpeedCommanded   = m_currentTranslationMag * sin(m_currentTranslationDir);
-      m_currentRotation = m_rotLimiter.Calculate(0.0);
-   }
-   else
-   {
-      /* Not using rate limiting.  Just set the commanded speeds to the */
-      /* values that were specified.                                    */
-      xSpeedCommanded   = xSpeed.value();
-      ySpeedCommanded   = ySpeed.value();
-      m_currentRotation = 0.0;
-   }
-
-//xxx note more to do here.. needs to use PID to set rotation based on angle from speaker...
-//xxx currently just doing the same as it is in normal drive function at this point..
-
-   // Convert the commanded speeds into the correct units for the drivetrain
-   units::meters_per_second_t xSpeedDelivered = xSpeedCommanded * m_maxSpeed;
-   units::meters_per_second_t ySpeedDelivered = ySpeedCommanded * m_maxSpeed;
-   units::radians_per_second_t rotDelivered   = m_currentRotation * m_maxAngularSpeed;
-
-   /* Now build the chassis speeds assuming field relative movement.    */
-   ChassisSpeeds = frc::ChassisSpeeds::FromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, pidgey_gyro.GetRotation2d());
-
-   /* Next calculate the drive kinematics to get the required swerve    */
-   /* module states based on the specified Chassis Speeds.              */
-   auto setpointStates = kDriveKinematics.ToSwerveModuleStates(ChassisSpeeds);
-
-   /* Renormalizes the wheel speeds if any individual speed is above the*/
-   /* specified maximum.                                                */
-   /* ** NOTE ** Sometimes, after inverse kinematics, the requested     */
-   /*            speed from one or more modules may be above the max    */
-   /*            attainable speed for the driving motor on that module. */
-   /*            To fix this issue, one can reduce all the wheel speeds */
-   /*            to make sure that all requested module speeds are      */
-   /*            at-or-below the absolute threshold, while maintaining  */
-   /*            the ratio of speeds between modules.                   */
-   kDriveKinematics.DesaturateWheelSpeeds(&setpointStates, m_maxSpeed);
-
-   /* Break up the states into the individual swerve components.        */
-   auto [fl, fr, rl, rr] = setpointStates;
-
-   /* Log the set points states information.                            */
-   m_swerveSetpointsPublisher.Set(setpointStates);
-
-   /* Set the desired state for each of the swerve modules and save the */
-   /* return value to the optimized desired state.                      */
-   frontLeftOptimizedState  = m_frontLeft.SetDesiredState(fl);
-   frontRightOptimizedState = m_frontRight.SetDesiredState(fr);
-   rearLeftOptimizedState   = m_rearLeft.SetDesiredState(rl);
-   rearRightOptimizedState  = m_rearRight.SetDesiredState(rr);
-
-   /* Log the set points optimized information.                         */
-   m_swerveSetPointsOptimizedPublisher.Set(std::vector{frontLeftOptimizedState, frontRightOptimizedState, rearLeftOptimizedState, rearRightOptimizedState});
-}
-
    /* This function drive the robot using the specified robot relative  */
    /* speeds.                                                           */
-void DriveSubsystem::DriveRobotRelative(frc::ChassisSpeeds RobotRelativeSpeeds)
+void DriveSubsystem::SetChassisSpeed(frc::ChassisSpeeds chassisSpeeds)
 {
    frc::SwerveModuleState frontLeftOptimizedState{};
    frc::SwerveModuleState frontRightOptimizedState{};
@@ -376,7 +246,7 @@ void DriveSubsystem::DriveRobotRelative(frc::ChassisSpeeds RobotRelativeSpeeds)
 
    /* Next calculate the drive kinematics to get the required swerve    */
    /* module states based on the specified Chassis Speeds.              */
-   auto setpointStates = kDriveKinematics.ToSwerveModuleStates(RobotRelativeSpeeds);
+   auto setpointStates = kDriveKinematics.ToSwerveModuleStates(chassisSpeeds);
 
    /* Renormalizes the wheel speeds if any individual speed is above the*/
    /* specified maximum.                                                */
@@ -489,6 +359,13 @@ void DriveSubsystem::ResetEncoders()
    m_frontRight.ResetEncoders();
    m_rearLeft.ResetEncoders();
    m_rearRight.ResetEncoders();
+}
+
+   /* The following function returns a reference to the gyro for use    */
+   /* with dashboard.                                                   */
+ctre::phoenix6::hardware::Pigeon2 &DriveSubsystem::GetGyro()
+{
+   return(pidgey_gyro);
 }
 
    /* This function gets the current gyro angle from the module (in     */

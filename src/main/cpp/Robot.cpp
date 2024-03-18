@@ -20,10 +20,8 @@ void Robot::RobotInit()
    // Record both DS control and joystick data
    frc::DriverStation::StartDataLog(frc::DataLogManager::GetLog());
 
-   /* Start automatic streaming of a drivers camera.                     */
-
-   cs::UsbCamera camera =
-   frc::CameraServer::StartAutomaticCapture();
+   /* Start automatic streaming of a drivers camera.                */
+   cs::UsbCamera camera = frc::CameraServer::StartAutomaticCapture();
 
    // Set the resolution
    camera.SetResolution(640, 480);

@@ -47,21 +47,9 @@ class DriveSubsystem : public frc2::SubsystemBase {
   /**
    * Drives the robot using the specified chassis speed in a robot relative way.
    *
-   * @param RobotRelativeSpeeds    ChassisSpeeds for the robot.
+   * @param chassisSpeeds    ChassisSpeeds for the robot.
    */
-  void DriveRobotRelative(frc::ChassisSpeeds RobotRelativeSpeeds);
-
-  /**
-   * Drives the robot at given x and y speed while using PID to control the rotation.
-   * Rotation will be locked to the speakers location.  Speeds range from [-1, 1] and
-   * the linear speeds have no effect on the angular speed.
-   *
-   * @param xSpeed        Speed of the robot in the x direction (forward/backwards).
-   * @param ySpeed        Speed of the robot in the y direction (sideways).
-   *
-   * ** NOTE ** This function uses field relative controls while operating.
-   */
-  void DriveWithSpeakerAim(units::meters_per_second_t xSpeed, units::meters_per_second_t ySpeed);
+  void SetChassisSpeed(frc::ChassisSpeeds chassisSpeeds);
 
   /**
    * Sets the wheels into an X formation to prevent movement.
@@ -96,19 +84,26 @@ class DriveSubsystem : public frc2::SubsystemBase {
     */
    wpi::array<frc::SwerveModulePosition, 4> GetModulePositions();
 
-  /**
-   * Returns the heading of the robot.
-   *
-   * @return the robot's heading in degrees, from 180 to 180
-   */
-  units::degree_t GetHeading() const;
+   /**
+    * Returns the gyro object.
+    *
+    * @return the gyro object for use to add to the dashboard as a sendable.
+    */
+   ctre::phoenix6::hardware::Pigeon2 &GetGyro();
 
-  /**
-   * Returns the heading of the robot as a rotation 2d object..
-   *
-   * @return the robot's heading as a Rotation2d
-   */
-  frc::Rotation2d GetRotation2dHeading() const;
+   /**
+    * Returns the heading of the robot.
+    *
+    * @return the robot's heading in degrees, from 180 to 180
+    */
+   units::degree_t GetHeading() const;
+
+   /**
+    * Returns the heading of the robot as a rotation 2d object..
+    *
+    * @return the robot's heading as a Rotation2d
+    */
+   frc::Rotation2d GetRotation2dHeading() const;
 
   /**
    * Zeroes the heading of the robot.
@@ -183,9 +178,6 @@ class DriveSubsystem : public frc2::SubsystemBase {
       frc::Translation2d{-DriveConstants::kWheelBase/2, -DriveConstants::kTrackWidth/2}};  // rear right
 
  private:
-  // Components (e.g. motor controllers and sensors) should generally be
-  // declared private and exposed only through public methods.
-
   SwerveModule m_frontLeft;
   SwerveModule m_frontRight;
   SwerveModule m_rearLeft;
@@ -193,10 +185,6 @@ class DriveSubsystem : public frc2::SubsystemBase {
 
   // The gyro sensor - Pigeon 2.0
   ctre::phoenix6::hardware::Pigeon2 pidgey_gyro{DriveConstants::kPigeonGyroCanId, DriveConstants::kPigeonBusName};
-
-  // The following variable holds the PID controller used to automatically aim
-  // at the speaker.
-  frc::PIDController m_aimController;
 
   // Slew rate filter variables for controlling lateral acceleration
   double m_currentRotation       = 0.0;

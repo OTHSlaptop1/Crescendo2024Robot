@@ -32,6 +32,8 @@
 #include "subsystems/IntakeSubsystem.h"
 #include "subsystems/ShooterSubsystem.h"
 #include "subsystems/Arm2Subsystem.h"
+#include "subsystems/LiftSubsystem.h"
+#include "subsystems/DisplaySubsystem.h"
 
 #include "utils/SwerveSendable.h"
 
@@ -44,7 +46,9 @@
 #define USE_INTAKE
 #define USE_SHOOTER
 #define USE_ARM
-//#define USE_VISION
+#define USE_VISION
+//#define USE_LIFT
+#define USE_DISPLAY
 
 /**
  * This class is where the bulk of the robot should be declared.  Since
@@ -99,10 +103,16 @@ class RobotContainer {
   ShooterSubsystem  m_shooter;                 // shooter subsystem
 #endif
 #ifdef USE_VISION
-  VisionSubsystem   m_vision{"photonvision_0", frc::Transform3d{0_m, 0_m, 0_m, frc::Rotation3d{units::radian_t{0_deg}, units::radian_t{0_deg}, units::radian_t{0_deg}}}, m_odometry.GetAprilTagFieldLayout()};    // vision subsystem
+  VisionSubsystem   m_vision{"photonvision_0", frc::Transform3d{-16.75_in, 0_m, 12.25_in, frc::Rotation3d{units::radian_t{0_deg}, units::radian_t{32.5_deg}, units::radian_t{180.0_deg}}}, m_odometry.GetAprilTagFieldLayout()};    // vision subsystem
 #endif
 #ifdef USE_ARM
   Arm2Subsystem m_arm;                          // arm subsystem
+#endif
+#ifdef USE_LIFT
+  LiftSubsystem m_lift;
+#endif
+#ifdef USE_DISPLAY
+  DisplaySubsystem m_display;
 #endif
 
   // Static private function which acts as a command factory for getting
@@ -114,7 +124,8 @@ class RobotContainer {
 
 #ifdef USE_OPERATOR_CONTROLLER
   // The operator's controller
-  frc::GenericHID m_operatorController{OIConstants::kOperatorControllerPort};
+//  frc::GenericHID m_operatorController{OIConstants::kOperatorControllerPort};
+  frc2::CommandXboxController m_operatorController{OIConstants::kOperatorControllerPort};
 #endif
 
   /* The following variable holds the power distribution panel object. */
@@ -122,10 +133,11 @@ class RobotContainer {
 
    // Publisher variables for the power distribution.
    nt::DoublePublisher m_pdpVoltagePublisher;
-   nt::DoublePublisher m_pdpTemperaturePublisher;
    nt::DoublePublisher m_pdpCurrentPublisher;
    nt::DoublePublisher m_pdpPowerPublisher;
-   nt::DoublePublisher m_pdpEnergyPublisher;
+   nt::DoublePublisher m_pdpTotalPowerPublisher;
+
+   double m_totalPower;
 
   /* The following variable holds the variable use to control the rumble*/
   /* duty cycle.                                                        */
