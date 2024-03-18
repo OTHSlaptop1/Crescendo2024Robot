@@ -42,7 +42,7 @@
 #define RED_AMP_TAG_ID                                               (5)
 #define BLUE_AMP_TAG_ID                                              (6)
 
-#define USE_OPERATOR_CONTROLLER
+//#define USE_OPERATOR_CONTROLLER
 #define USE_INTAKE
 #define USE_SHOOTER
 #define USE_ARM
@@ -103,7 +103,7 @@ class RobotContainer {
   ShooterSubsystem  m_shooter;                 // shooter subsystem
 #endif
 #ifdef USE_VISION
-  VisionSubsystem   m_vision{"photonvision_0", frc::Transform3d{-16.75_in, 0_m, 12.25_in, frc::Rotation3d{units::radian_t{0_deg}, units::radian_t{32.5_deg}, units::radian_t{180.0_deg}}}, m_odometry.GetAprilTagFieldLayout()};    // vision subsystem
+  VisionSubsystem   m_vision{"photonvision_0", frc::Transform3d{-13_in, 0_m, 11.02_in, frc::Rotation3d{units::radian_t{0_deg}, units::radian_t{-35_deg}, units::radian_t{180.0_deg}}}, m_odometry.GetAprilTagFieldLayout()};    // vision subsystem
 #endif
 #ifdef USE_ARM
   Arm2Subsystem m_arm;                          // arm subsystem

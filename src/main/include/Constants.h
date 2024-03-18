@@ -49,8 +49,8 @@ constexpr double kRotationalSlewRate = 2.0;   // percent per second (1 = 100%)
    /*            It is defined to be "The radius of the drive base in   */
    /*            meters.  For swerve drive, this is the distance from   */
    /*            the center of the robot to the furthest module."       */
-constexpr units::meter_t kTrackWidth = 0.530225_m;  // Distance between centers of right and left wheels on robot
-constexpr units::meter_t kWheelBase  = 0.52705_m;   // Distance between centers of front and back wheels on robot
+constexpr units::meter_t kTrackWidth = 20.625_in;  // Distance between centers of right and left wheels on robot
+constexpr units::meter_t kWheelBase  = 20.6875_in;   // Distance between centers of front and back wheels on robot
 
 // SPARK MAX CAN IDs
 constexpr int kFrontLeftDrivingCanId  = 2;
@@ -232,7 +232,7 @@ namespace OdometryConstants {
    constexpr double kHolonomicPathFollowerConfigRotationD = 0.0;
 
    constexpr units::meters_per_second_t kHolonomicPathFollowerConfigMaxSpeed        = 3.25_mps;
-   constexpr units::meter_t             kHolonomicPathFollowerConfigDriveBaseRadius = 0.745_m / 2;
+   constexpr units::meter_t             kHolonomicPathFollowerConfigDriveBaseRadius = 29.2123_in / 2;
 
 } // namespace OdometryConstants
 

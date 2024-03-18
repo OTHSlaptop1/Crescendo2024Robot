@@ -21,10 +21,10 @@ void Robot::RobotInit()
    frc::DriverStation::StartDataLog(frc::DataLogManager::GetLog());
 
    /* Start automatic streaming of a drivers camera.                */
-   cs::UsbCamera camera = frc::CameraServer::StartAutomaticCapture();
+//   cs::UsbCamera camera = frc::CameraServer::StartAutomaticCapture();
 
    // Set the resolution
-   camera.SetResolution(640, 480);
+//   camera.SetResolution(640, 480);
 
    // Forward the photon vision port so it can be seen from computers
    // when tethered to the USB port on the roboRIO.

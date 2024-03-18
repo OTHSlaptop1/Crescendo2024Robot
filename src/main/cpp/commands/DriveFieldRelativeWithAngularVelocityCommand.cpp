@@ -4,6 +4,7 @@
 
 #include "commands/DriveFieldRelativeWithAngularVelocityCommand.h"
 
+#include <frc/DriverStation.h>
 #include <frc/geometry/Rotation2d.h>
 #include <frc/filter/SlewRateLimiter.h>
 
@@ -18,6 +19,9 @@ DriveFieldRelativeWithAngularVelocityCommand::DriveFieldRelativeWithAngularVeloc
    /* requirements list.                                                */
    AddRequirements(driveSubsystem);
    AddRequirements(odometrySubsystem);
+
+   m_driveSubsystemPtr    = driveSubsystem;
+   m_odometrySubsystemPtr = odometrySubsystem;
 
    /* Give this command a user readable name.                           */
    this->SetName("DriveFieldRelativeWithAngularVelocityCommand()");
@@ -137,15 +141,10 @@ void DriveFieldRelativeWithAngularVelocityCommand::Execute()
    /* estimated odometry.                                               */
    rotation2D = m_odometrySubsystemPtr->GetPose().Rotation();
 
-//zzz  probably need this... will have to test to see what happens blue vs red side..
-#if 0
-   // Convert from field relative might need to do something like or invert controls when on red alliance?
-   if(!robotRelativeOverride.get()) {
-     var driveRotation = drive.getRotation();
-     if (DriverStation.getAlliance() == Alliance.Red) {
-       driveRotation = driveRotation.plus(new Rotation2d(Math.PI));
-     }
-#endif
+   if(frc::DriverStation::GetAlliance() == frc::DriverStation::Alliance::kRed)
+   {
+      rotation2D = rotation2D + frc::Rotation2d{180_deg};
+   }
 
    /* Now build the chassis speeds assuming field relative movement. */
    ChassisSpeeds = frc::ChassisSpeeds::FromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotationDelivered, rotation2D);

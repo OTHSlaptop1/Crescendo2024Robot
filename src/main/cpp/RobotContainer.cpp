@@ -251,7 +251,8 @@ RobotContainer::RobotContainer() {
   /* Change the Tab to automatically start on the subsystems tab.       */
   frc::Shuffleboard::SelectTab("Subsystems");
 
-#if 1
+#if 0
+// this uses gyro only for field relative function
   /* Create a command to be used as the default command for the drive   */
   /* subsystem.  The left stick controls translation of the robot.      */
   /* Turning is controlled by the X axis of the right stick.            */
@@ -272,13 +273,14 @@ RobotContainer::RobotContainer() {
   // Set up default drive command
   m_drive.SetDefaultCommand(std::move(JoystickDriveCommand));
 #else
+// this uses pose estimation for field relative driving
   // Set up the default drive command.
   m_drive.SetDefaultCommand(std::move(DriveFieldRelativeWithAngularVelocityCommand(
                                                                                    &m_drive,
                                                                                    &m_odometry,
                                                                                    [this]{ return(-units::meters_per_second_t{frc::ApplyDeadband(m_driverController.GetLeftY(), OIConstants::kDriveDeadband)}); },
                                                                                    [this]{ return(-units::meters_per_second_t{frc::ApplyDeadband(m_driverController.GetLeftX(), OIConstants::kDriveDeadband)}); },
-                                                                                   [this]{ return(-units::meters_per_second_t{frc::ApplyDeadband(m_driverController.GetRightX(), OIConstants::kDriveDeadband)}); }
+                                                                                   [this]{ return(-units::radians_per_second_t{frc::ApplyDeadband(m_driverController.GetRightX(), OIConstants::kDriveDeadband)}); }
                                                                                   ).ToPtr()));
 #endif
 }
