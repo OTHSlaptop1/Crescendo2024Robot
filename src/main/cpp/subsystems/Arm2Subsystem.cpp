@@ -208,7 +208,7 @@ units::degree_t Arm2Subsystem::GetArmAngle(void)
    units::radian_t ret_val;
 
    /* Get the current angle of the arm.                                 */
-   ret_val = units::radian_t{std::fmod(m_armAbsoluteEncoder.GetPosition(), units::radian_t{360.0}.value())};
+   ret_val = units::radian_t{std::fmod(m_armAbsoluteEncoder.GetPosition(), units::radian_t{360.0_deg}.value())};
 
    /* Map the angle to the range [-180.0, 180.0].                       */
    if(ret_val > units::radian_t{180.0_deg})

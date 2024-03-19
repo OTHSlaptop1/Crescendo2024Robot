@@ -67,6 +67,11 @@ RobotContainer::RobotContainer() {
 
   /* Register the Arm Down Command.                                          */
   pathplanner::NamedCommands::registerCommand("ArmDown", std::move(m_arm.ArmDownCommand()));
+
+  /* Set the Arm position to the correct angle to shoot the amp side note.*/
+  pathplanner::NamedCommands::registerCommand("ArmShootAmpSideNote", std::move(m_arm.SetArmPositionCommand(32.0_deg)));
+
+  pathplanner::NamedCommands::registerCommand("ArmShootFromDistance", std::move(m_arm.SetArmPositionCommand(32_deg)));
 #endif
 
   /* Initialze the power distribution panel logging.                          */
@@ -129,6 +134,8 @@ RobotContainer::RobotContainer() {
    m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
    m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
    m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
+
+    m_chooser.AddOption("Test", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
    
   //red paths
    m_chooser.AddOption("RedSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomous 2"));
