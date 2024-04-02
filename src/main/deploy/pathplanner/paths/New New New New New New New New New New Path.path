@@ -3,13 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.284709527165534,
-        "y": 0.7515553059275135
+        "x": 2.56,
+        "y": 3.19
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.637069048785985,
-        "y": 1.344127758678053
+        "x": 4.7016357360085035,
+        "y": 1.850395972706078
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.284942222836145,
+        "y": 2.437823265628643
+      },
+      "prevControl": {
+        "x": 5.876490321853631,
+        "y": 1.3070257267527063
+      },
+      "nextControl": {
+        "x": 8.73925717622398,
+        "y": 2.651129676670492
       },
       "isLocked": false,
       "linkedName": null
@@ -20,35 +36,23 @@
         "y": 3.19
       },
       "prevControl": {
-        "x": 4.01975165189767,
-        "y": 2.5251626139872
+        "x": 5.362491440546387,
+        "y": 0.6608557045378859
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [],
-  "constraintZones": [],
-  "eventMarkers": [
+  "rotationTargets": [
     {
-      "name": "New Event Marker",
-      "waypointRelativePos": 0.7,
-      "command": {
-        "type": "parallel",
-        "data": {
-          "commands": [
-            {
-              "type": "named",
-              "data": {
-                "name": "ArmShootAmpSideNote"
-              }
-            }
-          ]
-        }
-      }
+      "waypointRelativePos": 1,
+      "rotationDegrees": 29.53878225955801,
+      "rotateFast": false
     }
   ],
+  "constraintZones": [],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
@@ -57,7 +61,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -37.26494054467453,
+    "rotation": -34.026525041381,
     "rotateFast": false
   },
   "reversed": false,

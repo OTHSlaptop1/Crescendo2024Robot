@@ -53,6 +53,9 @@ void Robot::RobotPeriodic()
    /* Pump the drive speed governor.                                    */
    m_container.PumpDriveGovernor();
 
+   // pump the vision to see if it can see any tags.
+   m_container.PumpHasTarget();
+
    /* Run the command scheduler.                                        */
    frc2::CommandScheduler::GetInstance().Run();
 }
@@ -125,6 +128,9 @@ void Robot::TeleopPeriodic()
    /* Pump the periodic polling in the Robot Container that is used to  */
    /* control the controller rumble function.                           */
    m_container.PumpRumble();
+   
+   /* Log the shoot pose for data.                                      */
+   m_container.LogShootFromPose();
 }
 
 /**

@@ -84,6 +84,18 @@ class OdometrySubsystem : public frc2::SubsystemBase {
    */
   frc2::CommandPtr PathToPoseCommand(frc::Pose2d endPose, units::meters_per_second_t goalEndVelocity, units::meter_t rotationDelayDistance);
 
+  /*
+  * Creates a command using path planner to drive a path to the specified position
+  * that will be flipped based on the value of the path flipping supplier.
+  *
+  *  @param endPose                 The end position for the path.
+  *  @param goalEndVelocity         The goal end velocity of the robot when reaching the target pose
+  *  @param rotationDelayDistance   The distance the robot should move from the start position before attempting to rotate to the final rotation
+  *
+  *  @return A command pointer that of a command that will run the path to the position.
+  */
+ frc2::CommandPtr PathToPoseFlippedCommand(frc::Pose2d endPose, units::meters_per_second_t goalEndVelocity, units::meter_t rotationDelayDistance);
+
  private:
 
   // Odometry class for tracking robot pose 4 defines the number of swerve modules

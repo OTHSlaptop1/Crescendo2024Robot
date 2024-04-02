@@ -49,6 +49,9 @@ class LiftSubsystem : public frc2::SubsystemBase
 
   /* Function to reset the position encoder.                            */
   void ResetLiftEncoder(void);
+  
+   /* Function to get the current lift encoder value.                    */
+ double GetLiftEncoderValue(void);
 
   /**
    * Function to set the servo controlled latch.

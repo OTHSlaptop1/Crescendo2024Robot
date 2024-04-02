@@ -34,6 +34,7 @@
 #include "commands/ShootNoteFromIntakeCommand.h"
 #include "commands/ShootNoteFromIntakeByArmPositionCommand.h"
 #include "commands/DriveFieldRelativeWithAngularVelocityCommand.h"
+#include "commands/TurnToAngleProfiled.h"
 
 #include "subsystems/DriveSubsystem.h"
 #include "subsystems/OdometrySubsystem.h"
@@ -46,7 +47,7 @@ RobotContainer::RobotContainer() {
 
 #ifdef USE_INTAKE
   /* Register the named commands that will be used by path planner.     */
-  pathplanner::NamedCommands::registerCommand("IntakeGrabNote", std::move(m_intake.GrabNoteCommand(4500_rpm)));
+  pathplanner::NamedCommands::registerCommand("IntakeGrabNote", std::move(m_intake.GrabNoteCommand(9000_rpm)));   // was 4500 for some reason.....  try 9k
 
 #ifdef USE_SHOOTER
   pathplanner::NamedCommands::registerCommand("ShootNoteFromIntake", std::move(ShootNoteFromIntakeCommand(
@@ -68,10 +69,13 @@ RobotContainer::RobotContainer() {
   /* Register the Arm Down Command.                                          */
   pathplanner::NamedCommands::registerCommand("ArmDown", std::move(m_arm.ArmDownCommand()));
 
-  /* Set the Arm position to the correct angle to shoot the amp side note.*/
-  pathplanner::NamedCommands::registerCommand("ArmShootAmpSideNote", std::move(m_arm.SetArmPositionCommand(32.0_deg)));
+  pathplanner::NamedCommands::registerCommand("ArmShootAmpSideNote", std::move(m_arm.SetArmPositionCommand(32_deg)));
 
   pathplanner::NamedCommands::registerCommand("ArmShootFromDistance", std::move(m_arm.SetArmPositionCommand(32_deg)));
+
+  pathplanner::NamedCommands::registerCommand("ArmShootFromMidnote", std::move(m_arm.SetArmPositionCommand(27.75_deg)));
+
+  pathplanner::NamedCommands::registerCommand("ArmShootAmpSideNote2", std::move(m_arm.SetArmPositionCommand(30_deg)));
 #endif
 
   /* Initialze the power distribution panel logging.                          */
@@ -79,6 +83,11 @@ RobotContainer::RobotContainer() {
   m_pdpCurrentPublisher     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Current").Publish();
   m_pdpPowerPublisher       = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/Power").Publish();
   m_pdpTotalPowerPublisher  = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/PDP/TotalPower").Publish();
+
+  m_distanceFromSpeaker     = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/ShootFromPose/DistanceFromSpeaker").Publish();
+  m_armAngle                = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/ShootFromPose/ArmAngle").Publish();
+  m_angleToSpeaker          = nt::NetworkTableInstance::GetDefault().GetDoubleTopic("/ShootFromPose/AngleToSpeaker").Publish();
+  m_shootingPosePublisher   = nt::NetworkTableInstance::GetDefault().GetStructTopic<frc::Pose2d>("/ShootFromPose/ShootingPose").Publish();
 
   /* Initialize the total power consumtion.                             */
   m_totalPower              = 0;
@@ -100,9 +109,6 @@ RobotContainer::RobotContainer() {
 
   // Initialize all of your commands and subsystems here
 
-/// test display....
-   m_display.DisplayToggle(1500_ms, frc::Color8Bit{128, 128, 0}, frc::Color8Bit{0, 0, 128});
-
   // Configure the button bindings
   ConfigureButtonBindings();
 
@@ -110,45 +116,33 @@ RobotContainer::RobotContainer() {
   /* *********************** Autonomous ******************************* */
   /* ****************************************************************** */
 
-  frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose", frc::BuiltInLayouts::kList).WithSize(3, 4).WithPosition(0, 2);
+  //frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose", frc::BuiltInLayouts::kList).WithSize(3, 4).WithPosition(0, 2);
     // Add sliders to track or set the position.
-  m_SetPoseXEntryPtr     = frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").Add("X meters", m_odometry.GetPose().X().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble((m_odometry.GetFieldLength()).value())}}).WithPosition(0, 1).GetEntry();
-  m_SetPoseYEntryPtr     = frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").Add("Y meters", m_odometry.GetPose().Y().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble((m_odometry.GetFieldWidth()).value())}}).WithPosition(0, 2).GetEntry();
+  //m_SetPoseXEntryPtr     = frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").Add("X meters", m_odometry.GetPose().X().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble((m_odometry.GetFieldLength()).value())}}).WithPosition(0, 1).GetEntry();
+  //m_SetPoseYEntryPtr     = frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").Add("Y meters", m_odometry.GetPose().Y().value()).WithWidget(frc::BuiltInWidgets::kNumberSlider).WithProperties({{"min_value", nt::Value::MakeDouble(0.0)}, {"max_value", nt::Value::MakeDouble((m_odometry.GetFieldWidth()).value())}}).WithPosition(0, 2).GetEntry();
 
-  m_allowSetPoseEntryPtr = frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").Add("Allow Set Pose", false).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
+  //m_allowSetPoseEntryPtr = frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").Add("Allow Set Pose", false).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
 
   /* Add a button to set the position using a triggered network button  */
   /* command.  Note this clears the boolean after running the function  */
   /* to reset the odometry.                                             */
-  frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").AddBoolean("Reset Odometry", [this]{ return(m_resetOdometryButton); }).WithWidget(frc::BuiltInWidgets::kToggleButton).WithPosition(0, 4);
-  frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Autonomous/Set Pose/Reset Odometry")).OnTrue(frc2::cmd::RunOnce([this] { m_odometry.ResetOdometry({units::meter_t(m_SetPoseXEntryPtr->GetDouble(0.0)), units::meter_t(m_SetPoseYEntryPtr->GetDouble(0.0)), m_drive.GetRotation2dHeading()}); m_resetOdometryButton = false; }, {&m_drive, &m_odometry}));
+  //frc::Shuffleboard::GetTab("Autonomous").GetLayout("Set Pose").AddBoolean("Reset Odometry", [this]{ return(m_resetOdometryButton); }).WithWidget(frc::BuiltInWidgets::kToggleButton).WithPosition(0, 4);
+  //frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Autonomous/Set Pose/Reset Odometry")).OnTrue(frc2::cmd::RunOnce([this] { m_odometry.ResetOdometry({units::meter_t(m_SetPoseXEntryPtr->GetDouble(0.0)), units::meter_t(m_SetPoseYEntryPtr->GetDouble(0.0)), m_drive.GetRotation2dHeading()}); m_resetOdometryButton = false; }, {&m_drive, &m_odometry}));
 
-  // Add Path Planner autos into the autonomous command chooser
-  //blue paths
-   m_chooser.SetDefaultOption("BlueShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8")); //start at middle of field
-   m_chooser.AddOption("BlueAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 1")); //start at the side closer to the speaker
-   m_chooser.AddOption("BlueSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 2")); //start at the side closer to the opposing teams source
-   m_chooser.AddOption("BlueShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 3"));
+ // Add Path Planner autos into the autonomous command chooser
+  m_chooser.SetDefaultOption("BlueShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8")); //start at middle of field
+  m_chooser.AddOption("BlueAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 1")); //start at the side closer to the speaker
+  m_chooser.AddOption("BlueSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 2")); //start at the side closer to the opposing teams source
+  m_chooser.AddOption("BlueShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 3"));
   m_chooser.AddOption("BlueShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 4"));
-   m_chooser.AddOption("BlueRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 5"));
-   m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
-   m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
-   m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
-
-    m_chooser.AddOption("Test", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
-   
-  //red paths
-   m_chooser.AddOption("RedSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomous 2"));
-   m_chooser.AddOption("RedAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomous 1"));
-   m_chooser.AddOption("RedShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 3"));
-   m_chooser.AddOption("RedShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 4"));
-   m_chooser.AddOption("RedRapidFireSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 5"));
-   m_chooser.AddOption("RedRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 6"));
-   m_chooser.AddOption("RedShootAndStaySourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 7"));
-   m_chooser.AddOption("RedShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Red Source- Autonomus 8"));
-   
-
-
+  m_chooser.AddOption("BlueRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 5"));
+  m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
+  m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
+  m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
+  // new and improved autos ↓
+  m_chooser.AddOption("AmpSide(3)-Good", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
+  m_chooser.AddOption("Ampside(4)-decent", std::bind(RobotContainer::PathPlannerCommandFactory, "something you want to know"));
+  m_chooser.AddOption("Sourceside(3)-untested", std::bind(RobotContainer::PathPlannerCommandFactory, "Source-Farnotes"));
 
   // Put the chooser on the dashboard
   frc::Shuffleboard::GetTab("Autonomous").Add("Select Autonomous Path", m_chooser).WithSize(3, 2).WithPosition(0, 0);
@@ -196,7 +190,6 @@ RobotContainer::RobotContainer() {
   m_triggerBasedSpeedControlEntryPtr = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Use Trigger Speed Control", true).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 3).GetEntry();
 //  m_fieldRelativeStateEntryPtr       = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Field Relative", m_drive.GetFieldRelativeState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 4).GetEntry();
   m_limitSlewRateEntryPtr            = frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Limit Slew Rate", m_drive.GetLimitSlewRateState()).WithWidget(frc::BuiltInWidgets::kToggleSwitch).WithPosition(0, 5).GetEntry();
-//  frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").AddDouble("Gyro Heading", [this]{ return(std::fabs((std::fmod(m_drive.GetHeading().value(), 360.0)))); }).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
   frc::Shuffleboard::GetTab("Subsystems").GetLayout("Drive").Add("Gyro Heading", m_drive.GetGyro()).WithWidget(frc::BuiltInWidgets::kGyro).WithPosition(0, 6);
 
   /* Add a button to reset the gyro using a triggered network button    */
@@ -256,10 +249,10 @@ RobotContainer::RobotContainer() {
 #endif
 
   /* Change the Tab to automatically start on the subsystems tab.       */
-  frc::Shuffleboard::SelectTab("Subsystems");
+  frc::Shuffleboard::SelectTab("Autonomous");
 
 #if 0
-// this uses gyro only for field relative function
+// this uses gyro only for field relative driving.
   /* Create a command to be used as the default command for the drive   */
   /* subsystem.  The left stick controls translation of the robot.      */
   /* Turning is controlled by the X axis of the right stick.            */
@@ -280,7 +273,7 @@ RobotContainer::RobotContainer() {
   // Set up default drive command
   m_drive.SetDefaultCommand(std::move(JoystickDriveCommand));
 #else
-// this uses pose estimation for field relative driving
+// this uses pose estimation for field relative driving.
   // Set up the default drive command.
   m_drive.SetDefaultCommand(std::move(DriveFieldRelativeWithAngularVelocityCommand(
                                                                                    &m_drive,
@@ -297,9 +290,16 @@ void RobotContainer::ConfigureButtonBindings()
    /* Set the B button to set the wheels in X position to stop          */
    /* quickly.                                                          */
    m_driverController.B().WhileTrue(frc2::cmd::Run([this] { m_drive.SetX(); }, {&m_drive}));
+//   m_driverController.B().WhileTrue(frc2::cmd::Run([this] { m_display.DisplayToggle(1500_ms, frc::Color8Bit{128, 128, 0}, frc::Color8Bit{0, 0, 128});; }, {&m_display}));
 
-   /* Set the X button to zero the gyro heading.                        */
-   m_driverController.X().OnTrue(frc2::cmd::RunOnce([this] { m_drive.ZeroHeading(); }, {&m_drive}));
+   /* Set the A button to zero the gyro heading.                        */
+   m_driverController.A().OnTrue(frc2::cmd::RunOnce([this] { m_drive.ZeroHeading(); m_odometry.ResetOdometry({0_m, 0_m, frc::Rotation2d{0_deg}}); }, {&m_drive}));
+
+   /* Set the X button to move and than shoot to a fixed pose.          */
+   m_driverController.X().WhileTrue(ShootFromFixedPose());
+
+   /* Set the A button to spin the robot by 180 degrees.                */
+//   m_driverController.A().WhileTrue(std::move(TurnToAngleProfiled(m_odometry.GetPose().RotateBy(180_deg).Rotation().Degrees(), &m_drive).ToPtr()));
 
 #ifdef USE_INTAKE
    /* Set the Right Trigger to run the intake until a note is grabbed or*/
@@ -347,11 +347,6 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                                 0.750_s,        // after intake enabled time till complete
                                                                                                 &m_arm          // arm subsystem pointer
                                                                                                 ).ToPtr()));
-
-   /* Set the Left Bummper to toggle between Field Relative and None    */
-   /* Field Relative states.                                            */
-   m_driverController.LeftBumper().OnTrue(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(false); }, {&m_drive}))
-                                  .OnFalse(frc2::cmd::RunOnce([this] { m_drive.SetFieldRelativeState(true); }, {&m_drive}));
 #endif
 #endif
 
@@ -366,6 +361,44 @@ void RobotContainer::ConfigureButtonBindings()
    frc2::POVButton(&m_operatorController, 180).WhileTrue(m_arm.ArmDownCommand());
    frc2::POVButton(&m_operatorController, 135).WhileTrue(m_arm.ArmDownCommand());
    frc2::POVButton(&m_operatorController, 225).WhileTrue(m_arm.ArmDownCommand());
+
+#if 1
+  /* Create a command to be used as the default command for the lift    */
+  /* subsystem.  The left stick Y controls the robot lift movement.     */
+  frc2::CommandPtr JoystickLiftCommand = frc2::RunCommand(
+                                                            [this] {
+                                                                      if(m_operatorController.GetBButton())
+                                                                      {
+                                                                         m_lift.MoveLift(-frc::ApplyDeadband(m_operatorController.GetLeftY(), OIConstants::kDriveDeadband)*6_V);
+                                                                      }
+                                                                      else
+                                                                      {
+                                                                        m_lift.StopLift();
+                                                                      }
+                                                                   },
+                                                                   {&m_lift}).ToPtr();
+
+   /* Give the command a user understandable name.                       */
+   JoystickLiftCommand.get()->SetName("Joystick Lift Default Command");
+
+   // Set up default lift command
+   m_lift.SetDefaultCommand(std::move(JoystickLiftCommand));
+
+   /* Set the Left Bumper to Set the Lift Latch.                        */
+   m_operatorController.LeftBumper().OnTrue(frc2::cmd::RunOnce([this] { m_lift.SetLatch(); }, {&m_lift}));
+
+   /* Set the Right Bumper to Release the Lift Latch.                   */
+   m_operatorController.RightBumper().OnTrue(frc2::cmd::RunOnce([this] { m_lift.ReleaseLatch(); }, {&m_lift}));
+
+   /* Set the X button to reset the lift encoder.                       */
+   m_operatorController.X().OnTrue(frc2::cmd::RunOnce([this] { m_lift.ResetLiftEncoder(); }, {&m_lift}));
+
+   m_operatorController.A().OnTrue(frc2::RunCommand([this] { m_lift.MoveLiftDown(12_V); }, {&m_lift}).ToPtr()).OnFalse(frc2::cmd::RunOnce([this] { m_lift.StopLift(); }, {&m_lift}));
+
+   m_operatorController.Y().OnTrue(frc2::RunCommand([this] { m_lift.MoveLiftUp(8_V); }, {&m_lift}).ToPtr()).OnFalse(frc2::cmd::RunOnce([this] { m_lift.StopLift(); }, {&m_lift}));
+
+   m_operatorController.B().OnTrue(frc2::cmd::RunOnce([this] { m_arm.DisableArm(); }, {&m_arm}));
+#endif
 #endif
 #ifdef USE_INTAKE
 //xxx add some command for in and out the intake to possible fix stuck notes..
@@ -581,6 +614,7 @@ void RobotContainer::PumpShuffleBoard(void)
    }
 #endif
 
+#if 0
    /* Now check to see if setting the pose is currently allowed or if we*/
    /* are just going to display the current pose.                       */
    if(m_allowSetPoseEntryPtr->GetBoolean(false))
@@ -597,6 +631,7 @@ void RobotContainer::PumpShuffleBoard(void)
       m_SetPoseXEntryPtr->SetDouble(m_odometry.GetPose().X().value());
       m_SetPoseYEntryPtr->SetDouble(m_odometry.GetPose().Y().value());
    }
+ #endif  
 
 //xxx old way of updating the robot position on the game field..  delete me when we see the new way is working.
 //xxx new way passes the field object by refernce to the odometry so it can update the position and add things like target pose and trajectory..
@@ -616,7 +651,6 @@ void RobotContainer::DisableRumble(void)
    /* The display is set to be synchronized with the rumble function for*/
    /* note indication.  Set the display to off.                         */
    m_display.DisplayOff();
-
 }
 
   /* The following function is responsible for pumping the logic used to*/
@@ -653,7 +687,7 @@ void RobotContainer::PumpRumble(void)
 
             /* There is a note in the intake to indicate this we will   */
             /* toggle between 2 colors.  Set the display to "yellow".   */
-            m_display.DisplayOn(frc::Color8Bit{128, 111, 0});
+            m_display.DisplayOn(frc::Color8Bit(255, 222, 0));
 
          }
          else
@@ -671,7 +705,7 @@ void RobotContainer::PumpRumble(void)
 
             /* There is a note in the intake to indicate this we will   */
             /* toggle between 2 colors.  Set the display to "blue".     */
-            m_display.DisplayOn(frc::Color8Bit{0, 0, 128});
+            m_display.DisplayOn(frc::Color8Bit{0, 0, 255});
          }
       }
    }
@@ -741,3 +775,135 @@ frc2::CommandPtr RobotContainer::PathPlannerCommandFactory(std::string autoName)
 {
   return(pathplanner::PathPlannerAuto(autoName).ToPtr());
 }
+
+   /* Command Factory for creating a command that can shot from a       */
+   /* predefined location.                                              */
+frc2::CommandPtr RobotContainer::ShootFromFixedPose(void) noexcept
+{
+   /* Generated a command to create a path to the fixed position for    */
+   /* shooting.  We are using the flipped path to pose command so it    */
+   /* will automatically generate the correct path based on the         */
+   /* alliance.                                                         */
+   frc2::CommandPtr PathToShootingPose = m_odometry.PathToPoseFlippedCommand({4_m, 5.54_m, frc::Rotation2d{0_deg}}, 0.0_mps, 0_m);
+
+   /* Generate the command sequence to shoot from this fixed location.  */
+   return(frc2::cmd::Sequence(
+                              frc2::cmd::Parallel(
+                                                  std::move(PathToShootingPose),                                        // move to the shooting location.
+                                                  std::move(m_arm.SetArmPositionAndWaitUntilCompleteCommand(34.5_deg))  // move arm to the shooting position.
+                                                 ),
+                              std::move(ShootNoteFromIntakeCommand(
+                                                                   &m_intake,                        // intake subsystem pointer
+                                                                   9500_rpm,                         // intake output to shooter speed (rpm)
+                                                                   &m_shooter,                       // shooter subsystem pointer
+                                                                   4875_rpm,                         // shooter left flywheel speed (rpm)
+                                                                   4375_rpm,                         // shooter right flywheel speed (rpm
+                                                                   3.0_s,                            // shooter flywheel spinup timeout
+                                                                   0.750_s                           // after intake enabled time till complete
+                                                                  ).ToPtr()),
+                              std::move(m_arm.ArmDownCommand())                                      // move the arm back down
+                             )
+          );
+}
+
+   /* Command Factory for creating a command that can prepare for       */
+   /* lifting the robot on the chain.                                   */
+frc2::CommandPtr RobotContainer::PrepareForLiftCommand(void)
+{
+   /* Generated the command sequence to prepare for performing a lift.  */
+   return(frc2::cmd::Sequence(
+                               std::move(m_arm.ArmUpCommand()),    // move arm up
+                               std::move(frc2::RunCommand(
+                                                          [this] { m_lift.MoveLiftUp(8_V); },
+                                                          {&m_lift}
+                                                         ).ToPtr()),
+                               std::move(frc2::cmd::WaitUntil(
+                                                                [this] { return(m_lift.GetLiftEncoderValue() >= LiftConstants::kLiftMaximumValue); }
+                                                               ))
+                              )                
+         );
+}
+
+  /* Command Factory for creating a command that locks the lift in      */
+  /* preparation for lifting the robot on the chain.                    */
+frc2::CommandPtr RobotContainer::LockLiftCommand(void)
+{
+   /* Generated the command sequence to lock the lift before going down.*/
+   return(frc2::cmd::Sequence( 
+                               frc2::cmd::RunOnce([this] { m_lift.SetLatch(); }, {&m_lift}),
+                               frc2::cmd::Wait(200_ms),
+                               m_arm.SetArmPositionAndWaitUntilCompleteCommand(85_deg),
+                               frc2::cmd::RunOnce([this] { m_arm.DisableArm(); }, {&m_arm})
+                             )
+         );
+}
+
+void RobotContainer::LogShootFromPose(void) noexcept
+{
+   frc::Pose2d shootingPose;
+
+   /* Only log when on the blue side of the field.       */
+   if((shootingPose.X() > 0.0_m) && (shootingPose.X() <= (m_odometry.GetFieldLength()/2)))
+   {
+      // Calculate the distance from the center of the speaker.
+      // malvik's distance formula (x-0)^2 + (y-5.54_m)^2 = d^2  in meters
+      double field_x = shootingPose.X().value();
+      double field_y = shootingPose.Y().value() - 5.54;
+      units::meter_t distance = units::meter_t{std::sqrt((field_x * field_x) + (field_y * field_y))};
+
+      // shooter arm angle -0.0019d^2+0.7109d-30.41  (this equation assumes inches)
+      units::degree_t armAngle = units::degree_t{((-0.0019*(units::inch_t{distance}.value()*units::inch_t{distance}.value())) + (0.7109*units::inch_t{distance}.value()) - 30.41)};
+
+      // calculate offset turn angle to turn.  arctan(O/A), arctan(x/(y-5.54))?  probably negative of this.
+      units::degree_t targetTurnAngle = units::degree_t{std::atan2((shootingPose.Y()-5.54_m).value(), shootingPose.X().value())};  // might need to be X() than y() instead of the order here??
+
+     // log the values that come from the math.
+     m_distanceFromSpeaker.Set(distance.value());
+     m_armAngle.Set(armAngle.value());
+     m_angleToSpeaker.Set(targetTurnAngle.value());
+     m_shootingPosePublisher.Set({shootingPose.X(), shootingPose.Y(), frc::Rotation2d{targetTurnAngle}});
+   }
+}
+  /* Pumps the testing if the vision system currently has targets.      */
+void RobotContainer::PumpHasTarget(void)
+{
+   m_hasTagDetect.Set(!m_vision.HasTarget());
+}
+
+//xxx
+#if 0
+   /* Command Factory for creating a command that can shot from a       */
+   /* specified pose.                                                   */
+frc2::CommandPtr RobotContainer::ShootFromPose(frc::Pose2d shootingPose)
+{
+   // Calculate the distance from the center of the speaker.
+   // malvik's distance formula (x-0)^2 + (y-5.54_m)^2 = d^2
+   units::meter_t distance = std::sqrt((shootingPose.X() * shootingPose.X()) + ((shootingPose.Y()-5.54_m) * (shootingPose.Y()-5.54_m)));
+
+   // shooter arm angle -0.0019d^2+0.7109d-30.41  (this equation assumes inches)
+   units::degree_t armAngle = -0.0019*(units::inch_t{distance}*units::inch_t{distance} +0.7109*units::inch_t{distance}-30.41);
+
+   // calculate offset turn angle to turn.  arctan(O/A), arctan(x/(y-5.54))?  probably negative of this.
+   unit::degree_t targetTurnAngle = unit::degree_t{std::atan2((shootingPose.Y()-5.54_m).value(), shootingPose.X().value())};  // might need to be X() than y() instead of the order here??
+
+   // make sequence command.
+   //   1. turn to off set angle.  (needs a command written to do this that does exist).
+   //   2. move shooter to calculated angle.
+   //   3. shoot note from intake
+   //   4. lower arm.
+   return(frc2::cmd::Sequence(
+                              std::move(TurnToAngleProfiled(targetTurnAngle, &m_drive).ToPtr()),
+                              std::move(m_arm.SetArmPositionAndWaitUntilCompleteCommand(armAngle)),
+                              std::move(ShootNoteFromIntakeCommand(
+                                                                   &m_intake,    // intake subsystem pointer
+                                                                   9500_rpm,     // intake output to shooter speed (rpm)
+                                                                   &m_shooter,   // shooter subsystem pointer
+                                                                   4875_rpm,     // shooter left flywheel speed (rpm)
+                                                                   4375_rpm,     // shooter right flywheel speed (rpm
+                                                                   3.0_s,        // shooter flywheel spinup timeout
+                                                                   0.750_s       // after intake enabled time till complete
+                                                                  ).ToPtr()),
+                              std::move(m_arm.ArmDownCommand());
+         );
+}
+#endif

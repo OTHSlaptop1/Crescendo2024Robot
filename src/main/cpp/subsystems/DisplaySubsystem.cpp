@@ -3,6 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 
 #include "subsystems/DisplaySubsystem.h"
+#include <networktables/NetworkTableInstance.h>
 
 using namespace DisplayContants;
 
@@ -36,6 +37,8 @@ DisplaySubsystem::DisplaySubsystem()
    /* Initialize the toggle timeout to a known state.                   */
    m_toggleTimeout = 0_s;
    m_toggleCounter = 0_s;
+
+   m_displayStatePublisher = nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Display/State").Publish();
 }
 
 // This method will be called once per scheduler run
@@ -79,6 +82,8 @@ void DisplaySubsystem::Periodic()
 
          /* Toggle the color toggler.                                   */
          m_colorToggler = !m_colorToggler;
+
+         m_displayStatePublisher.Set(m_colorToggler);
       }
    }
 }
@@ -93,6 +98,8 @@ void DisplaySubsystem::DisplayOff(void)
    /* Set the display buffer to being off.                              */
    for(int Index=0;Index<kDisplayLength;Index++)
       m_ledBuffer[Index].SetRGB(0, 0, 0);
+
+   m_displayStatePublisher.Set(false);
 
    /* Set the display with the contents of the LED buffer.              */
    m_ledController.SetData(m_ledBuffer);
@@ -109,6 +116,8 @@ void DisplaySubsystem::DisplayOn(frc::Color8Bit color)
    /* Set the display buffer to being on and the specified color.       */
    for(int Index=0;Index<kDisplayLength;Index++)
       m_ledBuffer[Index].SetRGB(color.red, color.green, color.blue);
+
+   m_displayStatePublisher.Set(true);
 
    /* Set the display with the contents of the LED buffer.              */
    m_ledController.SetData(m_ledBuffer);
@@ -141,6 +150,8 @@ void DisplaySubsystem::DisplayToggle(units::second_t toggleTimeout, frc::Color8B
    /* Reset the color toggle to indicate that the first color is        */
    /* currently being displayed.                                        */
    m_colorToggler = true;
+
+   m_displayStatePublisher.Set(m_colorToggler);
 
    /* Set the toggle to be enabled.                                     */
    m_toggleEnabled = true;

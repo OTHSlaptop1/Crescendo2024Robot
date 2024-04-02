@@ -69,6 +69,15 @@ class Arm2Subsystem : public frc2::SubsystemBase {
   frc2::CommandPtr SetArmPositionCommand(units::degree_t setpoint);
 
   /**
+   * Generates a command to set the arm position and wait until the motion profile has completed.
+   *
+   *  @param setpoint  Set point position to move the arm to.
+   *
+   *  @return A command pointer that runs the arm to the specified position.
+   */
+  frc2::CommandPtr SetArmPositionAndWaitUntilCompleteCommand(units::degree_t setpoint);
+
+  /**
    * Generates a command to move the arm up.
    *
    *  @return A command pointer that runs the arm up.

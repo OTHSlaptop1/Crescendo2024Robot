@@ -12,19 +12,19 @@
           }
         },
         {
-          "type": "race",
+          "type": "parallel",
           "data": {
             "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "blueshootandrun1"
-                }
-              },
               {
                 "type": "named",
                 "data": {
                   "name": "IntakeGrabNote"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "shoot and pick up amp side"
                 }
               }
             ]
@@ -62,13 +62,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "ArmDown"
-                }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "New New New New New New New New Path"
+                  "name": "IntakeGrabNote"
                 }
               },
               {
@@ -78,37 +72,25 @@
                     {
                       "type": "wait",
                       "data": {
-                        "waitTime": 0.5
+                        "waitTime": 0.35
                       }
                     },
                     {
-                      "type": "named",
+                      "type": "path",
                       "data": {
-                        "name": "IntakeGrabNote"
+                        "pathName": "full steam ahead"
                       }
                     }
                   ]
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ArmDown"
+                }
               }
             ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ArmShootFromDistance"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.3
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ShootNoteFromIntake"
           }
         },
         {
@@ -118,13 +100,38 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "ArmDown"
+                  "name": "ArmShootFromMidnote"
                 }
               },
               {
                 "type": "path",
                 "data": {
-                  "pathName": "New New New New New New New New New Path"
+                  "pathName": "TURNMID"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ArmDown"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "grab another note while runnin"
                 }
               },
               {
@@ -140,10 +147,41 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "IntakeGrabNote"
+                        "name": "ArmShootAmpSideNote"
                       }
                     }
                   ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeGrabNote"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoteFromIntake"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "we run"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ArmDown"
                 }
               }
             ]

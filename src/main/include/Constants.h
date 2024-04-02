@@ -35,8 +35,8 @@ constexpr units::radians_per_second_t kDefaultMaxAngularSpeed{2 * std::numbers::
 
 // The following constant defines the arm angle in which the
 // drive speed govenor becomes active.
-constexpr units::degree_t             kDriveGovernorArmActiveAngle = 20_deg;
-constexpr units::meters_per_second_t  kDriveGovernorMaxSpeed       = 0.5_mps;
+constexpr units::degree_t             kDriveGovernorArmActiveAngle = 42.5_deg;
+constexpr units::meters_per_second_t  kDriveGovernorMaxSpeed       = 1.5_mps;
 constexpr units::radians_per_second_t kDriveGovernorMaxAngularSpeed{30_deg_per_s};
 
 constexpr double kDirectionSlewRate  = 1.2;   // radians per second
@@ -119,7 +119,7 @@ constexpr double kTurningMaxOutput = 1;
 constexpr rev::CANSparkMax::IdleMode kDrivingMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 constexpr rev::CANSparkMax::IdleMode kTurningMotorIdleMode = rev::CANSparkMax::IdleMode::kBrake;
 
-constexpr units::ampere_t kDrivingMotorCurrentLimit = 45_A;
+constexpr units::ampere_t kDrivingMotorCurrentLimit = 50_A;
 constexpr units::ampere_t kTurningMotorCurrentLimit = 30_A;
 }  // namespace ModuleConstants
 
@@ -227,9 +227,9 @@ namespace OdometryConstants {
    constexpr double kHolonomicPathFollowerConfigTranslationI = 0.0;
    constexpr double kHolonomicPathFollowerConfigTranslationD = 0.0;
 
-   constexpr double kHolonomicPathFollowerConfigRotationP = 5.0;
+   constexpr double kHolonomicPathFollowerConfigRotationP = 4.0;
    constexpr double kHolonomicPathFollowerConfigRotationI = 0.0;
-   constexpr double kHolonomicPathFollowerConfigRotationD = 0.0;
+   constexpr double kHolonomicPathFollowerConfigRotationD = 0.1;
 
    constexpr units::meters_per_second_t kHolonomicPathFollowerConfigMaxSpeed        = 3.25_mps;
    constexpr units::meter_t             kHolonomicPathFollowerConfigDriveBaseRadius = 29.2123_in / 2;
@@ -255,9 +255,9 @@ namespace ArmConstants {
    constexpr units::radian_t kArmEncoderPositionPIDMaxInput = units::radian_t{kArmEncoderPositionFactor};
 
    /* Arm PID constants.            */
-   constexpr double kArmP  = 0.45;                           // 100:1 0.785
+   constexpr double kArmP  = 0.455;                           // 100:1 0.785
    constexpr double kArmI  = 0.0;                            // 100:1 0.0
-   constexpr double kArmD  = 0.145;                          // 100:1 0.180
+   constexpr double kArmD  = 0.15;                          // 100:1 0.180
    constexpr double kArmFF = 0.0;                            // 100:1 0.0
    constexpr double kArmMinOutput = -1;                      // 100:1 -1
    constexpr double kArmMaxOutput = 1;                       // 100:1  1
@@ -265,8 +265,8 @@ namespace ArmConstants {
 //xxx arm 2 subsystem
    constexpr units::radians_per_second_t kArmUpMaxVelocity               = units::radians_per_second_t{90_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
    constexpr units::radians_per_second_squared_t kArmUpMaxAcceleration   = units::radians_per_second_squared_t{120_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
-   constexpr units::radians_per_second_t kArmDownMaxVelocity             = units::radians_per_second_t{45_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
-   constexpr units::radians_per_second_squared_t kArmDownMaxAcceleration = units::radians_per_second_squared_t{45_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
+   constexpr units::radians_per_second_t kArmDownMaxVelocity             = units::radians_per_second_t{55_deg_per_s};                // 100:1 90_deg_per_s   (note up can probalby be 90, down better like 75)
+   constexpr units::radians_per_second_squared_t kArmDownMaxAcceleration = units::radians_per_second_squared_t{55_deg_per_s_sq};     // 100:1 90_deg_per_s_sq (note down can be like 60)
 
    constexpr int kArmLeaderCanId  = 13;
    constexpr int kArmFollwerCanId = 15;
@@ -278,7 +278,7 @@ namespace ArmConstants {
 
 //xxx need to figure out these values???  maybe start with initial values form recalc...
    constexpr units::volt_t kS = 0.050_V;                       // 100:1 - 0.10
-   constexpr units::volt_t kG = 0.4290_V;                     // 100:1 - 0.785
+   constexpr units::volt_t kG = 0.42925_V;                     // 100:1 - 0.785
    constexpr auto kV = 3.25_V * 1_s / 1_rad;                    // 100:1 - 1.30
    constexpr auto kA = 0.035_V * 1_s * 1_s / 1_rad;            // 100:1 - 0.05
 
@@ -290,7 +290,7 @@ namespace LiftConstants {
 
    constexpr int kLiftServoChannel = 0;
 
-   constexpr double kLiftServoReleaseAngle = 125;
+   constexpr double kLiftServoReleaseAngle = 160;
    constexpr double kLiftServoLatchAngle   = 45;
 
    constexpr double kLiftMaximumValue      = 247.0;
@@ -308,7 +308,7 @@ namespace DisplayContants {
    constexpr int kDisplayPWMPort = 9;
 
    // Constant defines the length of the display in LEDs.
-   constexpr int kDisplayLength = 30;
+   constexpr int kDisplayLength = 10;
 
 }  //namespace DispalyConstants
 
@@ -317,7 +317,7 @@ namespace OIConstants
    constexpr int kDriverControllerPort = 0;
    constexpr double kDriveDeadband = 0.1;
 
-   constexpr double kDriverRumble = 0.1;
+   constexpr double kDriverRumble = 0.15;
    constexpr units::second_t kDriverRumbleOnTime  = 0.5_s;
    constexpr units::second_t kDriverRumbleOffTime = 1.0_s;
 

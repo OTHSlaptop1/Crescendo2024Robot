@@ -123,3 +123,10 @@ std::optional<photon::EstimatedRobotPose> VisionSubsystem::ConsumeLastEstimatedR
    /* Return the last estimated pose to the caller.                     */
    return(ret_val);
 }
+
+  /* Check to see if we can see any targets.                */
+bool VisionSubsystem::HasTarget(void)
+{
+   return(m_PhotonCamera.HasTargets());
+}
+

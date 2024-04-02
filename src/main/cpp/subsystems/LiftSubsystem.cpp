@@ -157,6 +157,12 @@ void LiftSubsystem::ResetLiftEncoder(void)
    m_liftVenomMotor.ResetPosition();
 }
 
+  /* Function to get the current lift encoder value.                    */
+double LiftSubsystem::GetLiftEncoderValue(void)
+{
+   return(m_liftVenomMotor.GetPosition());
+}
+
   /* Function to set the servo controlled latch.                        */
 void LiftSubsystem::SetLatch(void)
 {

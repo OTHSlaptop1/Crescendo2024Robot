@@ -9,6 +9,7 @@
 #include <frc/PowerDistribution.h>
 
 #include <networktables/DoubleTopic.h>
+#include <networktables/StructTopic.h>
 
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
@@ -18,6 +19,7 @@
 #include <frc/apriltag/AprilTagFieldLayout.h>
 #include <frc/apriltag/AprilTagFields.h>
 #include <frc/smartdashboard/Field2d.h>
+#include <frc/DigitalOutput.h>
 #include <units/time.h>
 
 #include <functional>
@@ -42,12 +44,12 @@
 #define RED_AMP_TAG_ID                                               (5)
 #define BLUE_AMP_TAG_ID                                              (6)
 
-//#define USE_OPERATOR_CONTROLLER
+#define USE_OPERATOR_CONTROLLER
 #define USE_INTAKE
 #define USE_SHOOTER
 #define USE_ARM
 #define USE_VISION
-//#define USE_LIFT
+#define USE_LIFT
 #define USE_DISPLAY
 
 /**
@@ -87,6 +89,12 @@ class RobotContainer {
   /* automatically slow the maximum speed allowable for driving.        */
   void PumpDriveGovernor(void);
 
+  /* Log shooting from pose information for data on if this could work. */
+  void LogShootFromPose(void) noexcept;
+
+  /* Pumps the testing if the vision system currently has targets.      */
+  void PumpHasTarget(void);
+ 
  private:
 
  // The robot's subsystems
@@ -119,6 +127,18 @@ class RobotContainer {
   // autonomous routines from path planner auto builder.
   static frc2::CommandPtr PathPlannerCommandFactory(std::string autoName) noexcept;
 
+  /* Command Factory for creating a command that can shot from a        */
+  /* predefined location.                                               */
+  frc2::CommandPtr ShootFromFixedPose(void) noexcept;
+
+  /* Command Factory for creating a command that can prepare for        */
+  /* lifting the robot on the chain.                                    */
+  frc2::CommandPtr PrepareForLiftCommand(void);
+
+  /* Command Factory for creating a command that locks the lift in      */
+  /* preparation for lifting the robot on the chain.                    */
+  frc2::CommandPtr LockLiftCommand(void);
+  
   // The driver's controller
   frc2::CommandXboxController m_driverController{OIConstants::kDriverControllerPort};
 
@@ -138,6 +158,12 @@ class RobotContainer {
    nt::DoublePublisher m_pdpTotalPowerPublisher;
 
    double m_totalPower;
+
+   // Publisher variables for logging shoot from pose function.
+   nt::DoublePublisher m_distanceFromSpeaker;
+   nt::DoublePublisher m_armAngle;
+   nt::DoublePublisher m_angleToSpeaker;
+   nt::StructPublisher<frc::Pose2d> m_shootingPosePublisher;
 
   /* The following variable holds the variable use to control the rumble*/
   /* duty cycle.                                                        */
@@ -178,6 +204,8 @@ class RobotContainer {
   bool              m_disableArmButton;
   bool              m_lastAllowArmControlState;
   double            m_armLastDashboardSetPoint;
+
+  frc::DigitalOutput m_hasTagDetect{9};
 
   /* Create the command that are used in various tabs on the            */
   /* Shuffleboard.                                                      */

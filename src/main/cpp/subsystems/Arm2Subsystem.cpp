@@ -10,10 +10,14 @@
 #include <units/angular_velocity.h>
 #include <units/angular_acceleration.h>
 
-   /* The following constant defines the threhold percentage of the     */
+   /* The following constant defines the threshold percentage of the    */
    /* targeted Arm Position that the Arm must attain to complete this   */
    /* command.                                                          */
 #define ARM_UP_THRESHOLD_PERCENT                                     (0.98)
+
+   /* The following constant defines the threshold percentage when using*/
+   /* the set position command.                                         */
+#define ARM_SET_POSITION_THRESHOLD_PERCENT                           (0.925)
 
 Arm2Subsystem::Arm2Subsystem()
    :  m_leaderSparkMax(kArmLeaderCanId, rev::CANSparkMax::MotorType::kBrushless),
@@ -270,6 +274,47 @@ frc2::CommandPtr Arm2Subsystem::SetArmPositionCommand(units::degree_t setpoint)
    return(frc2::cmd::RunOnce([this, setpoint] { this->SetArmPosition(setpoint); }, {this}));
 }
 
+  /* Generates a command to set the arm position and wait until the     */
+  /* motion profile has completed.                                      */
+frc2::CommandPtr Arm2Subsystem::SetArmPositionAndWaitUntilCompleteCommand(units::degree_t setpoint)
+{
+   /* Generated a command that enable and sets the goal to the specified*/
+   /* angle on initialization, does nothing while executing, stops the  */
+   /* arm and sets it position to the current position when interrupted.*/
+   /* Uses a motion profile velocity of zero to stop the commmand.      */
+   frc2::CommandPtr ret_val = frc2::FunctionalCommand(
+                                                      [this, setpoint] {
+                                                               /* Set the position for moving the arm subsystem to the specified set point.          */
+                                                               this->SetArmPosition(setpoint);
+                                                             },
+                                                      [] {},
+                                                      [this](bool interrupted){
+                                                                                /* Check to see if the reason this command ended was because it was  */
+                                                                                /* interrupts.                                                       */
+                                                                                if(interrupted)
+                                                                                {
+                                                                                   /* The reason this command ended was because it was interrupts.   */
+                                                                                   /* Set the goal angle for the arm to be the current angle to stop */
+                                                                                   /* its motion.                                                    */
+                                                                                   this->SetArmPosition(units::radian_t{this->GetArmAngle()});
+                                                                                }
+                                                                              },
+                                                      [this, setpoint]{
+                                                               /* Now check to see if the motion profile has completed.*/
+                                                               if((m_current.velocity == 0_deg_per_s) || ((m_ArmState == asMovingDown) && (this->GetArmAngle() <= 5.5_deg)) || ((m_ArmState == asMovingUp) && (this->GetArmAngle() >= setpoint*ARM_SET_POSITION_THRESHOLD_PERCENT)))
+                                                                  return(true);
+                                                               else
+                                                                  return(false);
+                                                            },
+                                                      {this} ).ToPtr();
+
+   /* Give the command a readable name.                                 */
+   ret_val.get()->SetName("SetArmPositionAndWaitUntilCompleteCommand()");
+
+   /* Return the command to the caller.                                 */
+   return(ret_val);
+}
+
   /* Disable the Arms motors.                                           */
 void Arm2Subsystem::DisableArm(void)
 {
@@ -357,7 +402,7 @@ frc2::CommandPtr Arm2Subsystem::ArmDownCommand(void)
                                                                               },
                                                       [this]{
                                                                /* Now check to see if we are at the minimum angle.                  */
-                                                               if(this->GetArmAngle() <= 5_deg)
+                                                               if(this->GetArmAngle() <= 5.5_deg)
                                                                   return(true);
                                                                else
                                                                   return(false);

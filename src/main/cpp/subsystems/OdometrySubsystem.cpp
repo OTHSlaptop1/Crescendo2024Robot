@@ -301,9 +301,32 @@ frc2::CommandPtr OdometrySubsystem::PathToPoseCommand(frc::Pose2d endPose, units
    /* specified position.                                               */
    pathplanner::PathConstraints constraints = pathplanner::PathConstraints(
                                                                            kHolonomicPathFollowerConfigMaxSpeed, // Max linear velocity (M/S)
-                                                                           4.0_mps_sq,                           // Max linear acceleration (M/S^2)
-                                                                           540_deg_per_s,                        // Max angular velocity (Deg/S)
-                                                                           720_deg_per_s_sq                      // Max angular acceleration (Deg/S^2)
+                                                                           3.5_mps_sq,                           // Max linear acceleration (M/S^2)
+                                                                           360_deg_per_s,                        // Max angular velocity (Deg/S)
+                                                                           540_deg_per_s_sq                      // Max angular acceleration (Deg/S^2)
+                                                                           );
+
+   /* Use AutoBuilder to build the pathfinding command to the specified */
+   /* pose.                                                             */
+   return(pathplanner::AutoBuilder::pathfindToPose(
+                                                   endPose,
+                                                   constraints,
+                                                   goalEndVelocity,       // Goal end velocity in meters/sec
+                                                   rotationDelayDistance  // Rotation delay distance in meters. This is how far the robot should travel before attempting to rotate.
+                                                   ));
+}
+
+   /* Creates a command using path planner to drive a path to the       */
+   /* specified position using the path flipping supplier.              */
+frc2::CommandPtr OdometrySubsystem::PathToPoseFlippedCommand(frc::Pose2d endPose, units::meters_per_second_t goalEndVelocity, units::meter_t rotationDelayDistance)
+{
+   /* Create the constrains to use while finding the path to the        */
+   /* specified position.                                               */
+   pathplanner::PathConstraints constraints = pathplanner::PathConstraints(
+                                                                           kHolonomicPathFollowerConfigMaxSpeed, // Max linear velocity (M/S)
+                                                                           3.5_mps_sq,                           // Max linear acceleration (M/S^2)
+                                                                           360_deg_per_s,                        // Max angular velocity (Deg/S)
+                                                                           540_deg_per_s_sq                      // Max angular acceleration (Deg/S^2)
                                                                            );
 
    /* Use AutoBuilder to build the pathfinding command to the specified */
@@ -317,7 +340,7 @@ frc2::CommandPtr OdometrySubsystem::PathToPoseCommand(frc::Pose2d endPose, units
 }
 
 #if 0
-//xxx from photonvision swerve sample code..
+//xxx from photonvision swerve sample code..  Figure out these for dynamic STd dev. calculation.
 Eigen::Matrix<double, 3, 1> GetEstimationStdDevs(frc::Pose2d estimatedPose)
 {
     Eigen::Matrix<double, 3, 1> estStdDevs = constants::Vision::kSingleTagStdDevs;

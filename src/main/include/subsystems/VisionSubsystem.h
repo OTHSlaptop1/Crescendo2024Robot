@@ -49,6 +49,9 @@ class VisionSubsystem : public frc2::SubsystemBase {
   */
   std::optional<photon::EstimatedRobotPose> ConsumeLastEstimatedRobotPose(void);
 
+  /* Check to see if we can see any targets.                */
+  bool HasTarget(void);
+
  private:
 
   /* The photon camera associated with this vision subsystem object.    */

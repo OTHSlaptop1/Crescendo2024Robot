@@ -7,6 +7,7 @@
 #include <frc2/command/SubsystemBase.h>
 #include <frc/AddressableLED.h>
 #include <frc/util/Color8Bit.h>
+#include <networktables/BooleanTopic.h>
 #include <units/time.h>
 
 #include <array>
@@ -65,5 +66,7 @@ class DisplaySubsystem : public frc2::SubsystemBase {
    /* The following variable holds the toggle timeout.                  */
    units::second_t m_toggleTimeout;
    units::second_t m_toggleCounter;
+
+   nt::BooleanPublisher m_displayStatePublisher;
 };
 

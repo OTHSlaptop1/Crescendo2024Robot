@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.284709527165534,
-        "y": 0.7515553059275135
+        "x": 0.7071301441350655,
+        "y": 6.667299774671107
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.637069048785985,
-        "y": 1.344127758678053
+        "x": 1.6616994951342325,
+        "y": 6.975699103455452
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 2.56,
-        "y": 3.19
+        "x": 2.909982492594682,
+        "y": 6.990384785778517
       },
       "prevControl": {
-        "x": 4.01975165189767,
-        "y": 2.5251626139872
+        "x": 1.9099824925946818,
+        "y": 6.990384785778517
       },
       "nextControl": null,
       "isLocked": false,
@@ -30,25 +30,7 @@
   ],
   "rotationTargets": [],
   "constraintZones": [],
-  "eventMarkers": [
-    {
-      "name": "New Event Marker",
-      "waypointRelativePos": 0.7,
-      "command": {
-        "type": "parallel",
-        "data": {
-          "commands": [
-            {
-              "type": "named",
-              "data": {
-                "name": "ArmShootAmpSideNote"
-              }
-            }
-          ]
-        }
-      }
-    }
-  ],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
@@ -57,13 +39,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -37.26494054467453,
+    "rotation": 0,
     "rotateFast": false
   },
   "reversed": false,
   "folder": null,
   "previewStartingState": {
-    "rotation": 0,
+    "rotation": 57.77124256490143,
     "velocity": 0
   },
   "useDefaultConstraints": true
