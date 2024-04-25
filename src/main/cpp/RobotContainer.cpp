@@ -327,8 +327,8 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  2000_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  2000_rpm,       // shooter right flywheel speed (rpm
+                                                                                  1000_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  1000_rpm,       // shooter right flywheel speed (rpm
                                                                                   2_s,            // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
