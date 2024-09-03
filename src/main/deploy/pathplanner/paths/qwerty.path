@@ -8,72 +8,72 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.1381070034867342,
-        "y": 0.027986237790656787
+        "x": 6.123233995736766e-17,
+        "y": 1.0
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.0,
-        "y": 0.0
+        "x": 0.0,
+        "y": 1.0
       },
       "prevControl": {
-        "x": 2.5,
+        "x": -6.123233995736766e-17,
         "y": 0.0
       },
       "nextControl": {
-        "x": 3.05,
-        "y": 0.0
+        "x": 6.123233995736766e-17,
+        "y": 2.0
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.0,
-        "y": 1.5
+        "x": 1.5,
+        "y": 1.0
       },
       "prevControl": {
-        "x": 3.0,
-        "y": 1.4500000000000002
+        "x": 0.4622351207504731,
+        "y": 1.0
       },
       "nextControl": {
-        "x": 3.0,
-        "y": 1.5499999999999998
+        "x": 2.5377648792495267,
+        "y": 1.0
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.0,
-        "y": -1.5
+        "x": 2.0,
+        "y": -1.0
       },
       "prevControl": {
-        "x": 3.0,
-        "y": -1.5499999999999998
+        "x": 2.6666504367854005,
+        "y": -1.0
       },
       "nextControl": {
-        "x": 3.0,
-        "y": -1.4500000000000002
+        "x": 1.3333495632145995,
+        "y": -1.0
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.0,
-        "y": 0.0
+        "x": 0.0,
+        "y": -1.0
       },
       "prevControl": {
-        "x": 2.95,
-        "y": 0.0
+        "x": -4.564753016813213e-17,
+        "y": -1.7454807410579725
       },
       "nextControl": {
-        "x": 3.05,
-        "y": 0.0
+        "x": 4.564753016813213e-17,
+        "y": -0.25451925894202754
       },
       "isLocked": false,
       "linkedName": null
@@ -84,8 +84,8 @@
         "y": 0.0
       },
       "prevControl": {
-        "x": -0.04999999999999982,
-        "y": 0.0
+        "x": -6.123233995736766e-17,
+        "y": -1.0
       },
       "nextControl": null,
       "isLocked": false,
@@ -108,6 +108,9 @@
   },
   "reversed": false,
   "folder": null,
-  "previewStartingState": null,
-  "useDefaultConstraints": false
+  "previewStartingState": {
+    "rotation": 0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": true
 }

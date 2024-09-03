@@ -140,9 +140,13 @@ RobotContainer::RobotContainer() {
   m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
   m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
   // new and improved autos ↓
-  m_chooser.AddOption("AmpSide(3)-Good", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
-  m_chooser.AddOption("Ampside(4)-decent", std::bind(RobotContainer::PathPlannerCommandFactory, "something you want to know"));
-  m_chooser.AddOption("Sourceside(3)-untested", std::bind(RobotContainer::PathPlannerCommandFactory, "Source-Farnotes"));
+//   m_chooser.AddOption("AmpSide(3)-Good", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
+//   m_chooser.AddOption("Ampside(4)-decent", std::bind(RobotContainer::PathPlannerCommandFactory, "something you want to know"));
+//   m_chooser.AddOption("Sourceside(3)-untested", std::bind(RobotContainer::PathPlannerCommandFactory, "Source-Farnotes"));
+//   m_chooser.AddOption("TEE", std::bind(RobotContainer::PathPlannerCommandFactory, "Tee"));
+  m_chooser.AddOption("Robtics Camp", std::bind(RobotContainer::PathPlannerCommandFactory, "Straight Line Auto"));
+//   m_chooser.AddOption("spech", std::bind(RobotContainer::PathPlannerCommandFactory, "spechBubble"));
+  m_chooser.AddOption("keysmash", std::bind(RobotContainer::PathPlannerCommandFactory, "liberty bell"));
 
   // Put the chooser on the dashboard
   frc::Shuffleboard::GetTab("Autonomous").Add("Select Autonomous Path", m_chooser).WithSize(3, 2).WithPosition(0, 0);
@@ -315,8 +319,8 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  4875_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  4375_rpm,       // shooter right flywheel speed (rpm
+                                                                                  4875_rpm,       // shooter left flywheel speed (rpm)  (was 4875_rpm after st louis)
+                                                                                  4375_rpm,       // shooter right flywheel speed (rpm) (was 4375_rpm after st louis)
                                                                                   3.0_s,          // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
@@ -327,8 +331,8 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  1000_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  1000_rpm,       // shooter right flywheel speed (rpm
+                                                                                  2250_rpm,       // shooter left flywheel speed (rpm)
+                                                                                  2000_rpm,       // shooter right flywheel speed (rpm
                                                                                   2_s,            // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));
