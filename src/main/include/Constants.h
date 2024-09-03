@@ -30,8 +30,9 @@
 namespace DriveConstants {
 // Driving Parameters - Note that these are not the maximum capable speeds of
 // the robot, rather the allowed maximum speeds
-constexpr units::meters_per_second_t kDefaultMaxSpeed = 1_mps;
+constexpr units::meters_per_second_t kDefaultMaxSpeed = 4.8_mps;
 constexpr units::radians_per_second_t kDefaultMaxAngularSpeed{2 * std::numbers::pi};
+
 
 // The following constant defines the arm angle in which the
 // drive speed govenor becomes active.
