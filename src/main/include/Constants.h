@@ -30,7 +30,7 @@
 namespace DriveConstants {
 // Driving Parameters - Note that these are not the maximum capable speeds of
 // the robot, rather the allowed maximum speeds
-constexpr units::meters_per_second_t kDefaultMaxSpeed = 4.8_mps;
+constexpr units::meters_per_second_t kDefaultMaxSpeed = 3_mps; //4.8_mps default
 constexpr units::radians_per_second_t kDefaultMaxAngularSpeed{2 * std::numbers::pi};
 
 
@@ -87,7 +87,7 @@ constexpr bool kTurningMotorInverted = true;
 // Calculations required for driving motor conversion factors and feed forward
 constexpr double kDrivingMotorFreeSpeedRps = 5676.0 / 60;  // NEO free speed is 5676 RPM
 
-constexpr units::meter_t kWheelDiameter      = 0.1016_m;  // 4 inches in meters
+constexpr units::meter_t kWheelDiameter      = 0.097_m;  // 4 inches in meters
 constexpr units::meter_t kWheelCircumference = kWheelDiameter * std::numbers::pi;
 
 // Swerve Drive Specialist Driving Gear Ratio is 6.12:1

@@ -86,13 +86,13 @@ void DisplaySubsystem::Periodic()
          m_displayStatePublisher.Set(m_colorToggler);
       }
    } else {
-      static int hue = 0;
-      for(int Index=0;Index<kDisplayLength;Index++)
-               m_ledBuffer[Index].SetHSV(hue, 255, 150);
+      // static int hue = 0;
+      // for(int Index=0;Index<kDisplayLength;Index++)
+      //          m_ledBuffer[Index].SetHSV(hue, 255, 150);
 
-      m_ledController.SetData(m_ledBuffer);
+      // m_ledController.SetData(m_ledBuffer);
       
-      hue += 1;
+      // hue += 1;
       
    }
 }

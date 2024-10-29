@@ -130,23 +130,23 @@ RobotContainer::RobotContainer() {
   //frc2::NetworkButton(nt::NetworkTableInstance::GetDefault().GetBooleanTopic("/Shuffleboard/Autonomous/Set Pose/Reset Odometry")).OnTrue(frc2::cmd::RunOnce([this] { m_odometry.ResetOdometry({units::meter_t(m_SetPoseXEntryPtr->GetDouble(0.0)), units::meter_t(m_SetPoseYEntryPtr->GetDouble(0.0)), m_drive.GetRotation2dHeading()}); m_resetOdometryButton = false; }, {&m_drive, &m_odometry}));
 
  // Add Path Planner autos into the autonomous command chooser
-  m_chooser.SetDefaultOption("BlueShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8")); //start at middle of field
-  m_chooser.AddOption("BlueAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 1")); //start at the side closer to the speaker
-  m_chooser.AddOption("BlueSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 2")); //start at the side closer to the opposing teams source
-  m_chooser.AddOption("BlueShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 3"));
-  m_chooser.AddOption("BlueShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 4"));
-  m_chooser.AddOption("BlueRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 5"));
-  m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
-  m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
-  m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
+   m_chooser.SetDefaultOption("BlueShootAndStayAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8")); //start at middle of field
+//   m_chooser.AddOption("BlueAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 1")); //start at the side closer to the speaker
+//   m_chooser.AddOption("BlueSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 2")); //start at the side closer to the opposing teams source
+//   m_chooser.AddOption("BlueShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 3"));
+//   m_chooser.AddOption("BlueShootAndRunSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 4"));
+//   m_chooser.AddOption("BlueRapidFireAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 5"));
+//   m_chooser.AddOption("BlueDoubleShootSourceSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 6"));
+//   m_chooser.AddOption("BlueDoubleShootAndRunAmpSide", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 7"));
+//   m_chooser.AddOption("ShootAndStay", std::bind(RobotContainer::PathPlannerCommandFactory, "Blue Source- Autonomus 8"));
   // new and improved autos ↓
-//   m_chooser.AddOption("AmpSide(3)-Good", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
-//   m_chooser.AddOption("Ampside(4)-decent", std::bind(RobotContainer::PathPlannerCommandFactory, "something you want to know"));
-//   m_chooser.AddOption("Sourceside(3)-untested", std::bind(RobotContainer::PathPlannerCommandFactory, "Source-Farnotes"));
-//   m_chooser.AddOption("TEE", std::bind(RobotContainer::PathPlannerCommandFactory, "Tee"));
-  m_chooser.AddOption("Robtics Camp", std::bind(RobotContainer::PathPlannerCommandFactory, "Straight Line Auto"));
+  m_chooser.AddOption("AmpSide(3)-Good", std::bind(RobotContainer::PathPlannerCommandFactory, "something that you know"));
+  m_chooser.AddOption("Ampside(4)-decent", std::bind(RobotContainer::PathPlannerCommandFactory, "something you want to know"));
+  m_chooser.AddOption("Sourceside(3)-untested", std::bind(RobotContainer::PathPlannerCommandFactory, "Source-Farnotes"));
+//  m_chooser.AddOption("TEE", std::bind(RobotContainer::PathPlannerCommandFactory, "Tee"));
+//   m_chooser.AddOption("Robtics Camp", std::bind(RobotContainer::PathPlannerCommandFactory, "Straight Line Auto"));
 //   m_chooser.AddOption("spech", std::bind(RobotContainer::PathPlannerCommandFactory, "spechBubble"));
-  m_chooser.AddOption("keysmash", std::bind(RobotContainer::PathPlannerCommandFactory, "liberty bell"));
+//   m_chooser.AddOption("keysmash", std::bind(RobotContainer::PathPlannerCommandFactory, "liberty bell"));
 
   // Put the chooser on the dashboard
   frc::Shuffleboard::GetTab("Autonomous").Add("Select Autonomous Path", m_chooser).WithSize(3, 2).WithPosition(0, 0);
@@ -331,8 +331,8 @@ void RobotContainer::ConfigureButtonBindings()
                                                                                   &m_intake,      // intake subsystem pointer
                                                                                   9500_rpm,       // intake output to shooter speed (rpm)
                                                                                   &m_shooter,     // shooter subsystem pointer
-                                                                                  2250_rpm,       // shooter left flywheel speed (rpm)
-                                                                                  2000_rpm,       // shooter right flywheel speed (rpm
+                                                                                  2250_rpm,       // shooter left flywheel speed (rpm)  (was 2250_rpm after st louis)
+                                                                                  2000_rpm,       // shooter right flywheel speed (rpm) (was 2000_rpm after st louis)
                                                                                   2_s,            // shooter flywheel spinup timeout
                                                                                   0.750_s         // after intake enabled time till complete
                                                                                   ).ToPtr()));

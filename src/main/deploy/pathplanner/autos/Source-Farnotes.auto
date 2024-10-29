@@ -50,7 +50,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "New New New New New New New Path"
+                  "pathName": "theyeahpath"
                 }
               },
               {
@@ -73,49 +73,6 @@
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "parallel",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "New New New New New New New New New New Path"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "IntakeGrabNote"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ArmDown"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ArmShootAmpSideNote2"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ShootNoteFromIntake"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ArmDown"
           }
         }
       ]
